@@ -4,7 +4,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Flame, ShoppingBag, Sparkles, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { BRAND } from "@/lib/content";
 import { egp, type Pricing } from "@/lib/api";
 
@@ -49,8 +49,22 @@ export function TopBar({ pricing }: { pricing: Pricing }) {
   );
 }
 
+/**
+ * الرجوع للرئيسية. لو المستخدم واقف عليها أصلًا فالتنقّل مش بيغيّر حاجة،
+ * فبنمرّر لأول الصفحة عشان الضغطة يبقى ليها أثر واضح.
+ */
+export function useGoHome() {
+  const [location, navigate] = useLocation();
+  return (event?: { preventDefault: () => void }) => {
+    event?.preventDefault();
+    if (location !== "/") navigate("/");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+}
+
 export function Header({ onOrder }: { onOrder: () => void }) {
   const [stuck, setStuck] = useState(false);
+  const goHome = useGoHome();
 
   useEffect(() => {
     const onScroll = () => setStuck(window.scrollY > 12);
@@ -62,7 +76,7 @@ export function Header({ onOrder }: { onOrder: () => void }) {
   return (
     <header className="site-header" data-stuck={stuck}>
       <div className="shell flex items-center justify-between gap-4 py-3">
-        <Link href="/" className="flex items-center gap-2.5" aria-label={`${BRAND.name} — الصفحة الرئيسية`}>
+        <Link href="/" onClick={goHome} className="flex items-center gap-2.5" aria-label={`${BRAND.name} — الصفحة الرئيسية`}>
           <span className="brand-mark ring-1 ring-navy/8">
             <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={46} height={46} />
           </span>
@@ -117,6 +131,7 @@ export function Footer() {
             <li><a href="#features" className="transition-colors hover:text-white">مميزات المنتج</a></li>
             <li><a href="#gallery" className="transition-colors hover:text-white">صور المنتج</a></li>
             <li><a href="#order" className="transition-colors hover:text-white">اطلب الآن</a></li>
+            <li><Link href="/track" className="transition-colors hover:text-white">تتبّع طلبك</Link></li>
             <li><a href="#faq" className="transition-colors hover:text-white">الأسئلة الشائعة</a></li>
           </ul>
         </div>

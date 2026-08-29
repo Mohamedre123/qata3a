@@ -35,6 +35,7 @@ type Status = {
   compareAtPrice: number;
   serverless?: boolean;
   ordersWebhook?: boolean;
+  trackingStore?: boolean;
   commissionPerUnit?: number;
   governorates: number;
   error?: string;
@@ -316,6 +317,15 @@ export default function Admin() {
             </p>
           </div>
         </section>
+
+        {status?.serverless && !status.trackingStore && (
+          <p className="flex items-start gap-2 rounded-2xl bg-[#FFFBEB] p-4 text-sm font-bold leading-7 text-[#B45309]">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            تتبّع الطلب شغّال بس التخزين مؤقّت — أي نشر جديد بيمسح الحالات المحفوظة.
+            اربط Upstash Redis من Vercel (Storage ← Marketplace) عشان التتبّع يفضل
+            شغّال بعد كل نشر.
+          </p>
+        )}
 
         {/* ----------------------------------------------- المنتج والتسعير */}
         <section className="grid gap-5 md:grid-cols-2">

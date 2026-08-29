@@ -21,6 +21,14 @@ import {
 } from "./config.js";
 import { FALLBACK_GOVERNORATES } from "./fallback-shipping.js";
 import {
+  HAS_KV,
+  STATUS_MAP,
+  describeStatus,
+  findOrderStatus,
+  saveOrderStatus,
+  updateOrderStatus,
+} from "./order-store.js";
+import {
   SafkaError,
   clearSafkaCache,
   createOrder,
@@ -376,6 +384,15 @@ export function createApiRouter(): Router {
       appendLine(ORDERS_LOG_FILE, record);
       void backupOrder(record);
       console.warn(`[qataaty] order saved locally (not connected): ${record.ref}`);
+      void saveOrderStatus({
+        reference: record.ref,
+        status: "pending",
+        statusAr: describeStatus("pending").label,
+        qty,
+        total,
+        createdAt: record.created_at,
+        updatedAt: record.created_at,
+      });
       res.status(201).json({
         success: true,
         pendingSync: true,
@@ -416,6 +433,18 @@ export function createApiRouter(): Router {
       const serial = result?.data?.serial_number || record.ref;
       console.log(`[qataaty] order sent to safka: ${serial}`);
 
+      // نسجّل الطلب عشان العميل يقدر يتتبّعه برقمه من صفحة /track،
+      // والحالة بتتحدّث بعد كده من webhook صفقة.
+      void saveOrderStatus({
+        reference: serial,
+        status: result?.data?.status ?? "pending",
+        statusAr: describeStatus(result?.data?.status ?? "pending").label,
+        qty,
+        total,
+        createdAt: record.created_at,
+        updatedAt: record.created_at,
+      });
+
       res.status(201).json({
         success: true,
         pendingSync: false,
@@ -430,6 +459,15 @@ export function createApiRouter(): Router {
       appendLine(ORDERS_LOG_FILE, record);
       void backupOrder(record);
       console.error(`[qataaty] order FAILED (${record.ref}):`, safka.message);
+      void saveOrderStatus({
+        reference: record.ref,
+        status: "pending",
+        statusAr: describeStatus("pending").label,
+        qty,
+        total,
+        createdAt: record.created_at,
+        updatedAt: record.created_at,
+      });
 
       // الطلب محفوظ عندنا — نُبلغ العميل بالنجاح ونتابع نحن المزامنة يدويًا.
       res.status(201).json({
@@ -439,6 +477,52 @@ export function createApiRouter(): Router {
         summary: { qty, unitPrice: config.sellPrice, subtotal, shipping, total },
       });
     }
+  });
+
+  // -------------------------------------------------------------------------
+  // تتبّع الطلب — نقطة عامة، بترجّع الحالة فقط بدون أي بيانات شخصية
+  // -------------------------------------------------------------------------
+  router.get("/track", async (req, res) => {
+    const reference = text(req.query.ref, 60);
+
+    if (reference.length < 4) {
+      res.status(400).json({ found: false, error: "اكتب رقم الطلب كامل." });
+      return;
+    }
+
+    if (rateLimited(`track:${clientIp(req)}`, 40, 10 * 60 * 1000)) {
+      res.status(429).json({ found: false, error: "محاولات كثيرة. جرّب بعد شوية." });
+      return;
+    }
+
+    const order = await findOrderStatus(reference);
+
+    if (!order) {
+      res.status(404).json({
+        found: false,
+        error: "مالقيناش طلب بالرقم ده. اتأكد من الرقم أو كلّمنا.",
+      });
+      return;
+    }
+
+    const info = describeStatus(order.status);
+    // صياغتنا أوضح للعميل من تسمية صفقة الداخلية («معلق» مثلًا)،
+    // فبنستخدم statusAr بتاعهم فقط لو الحالة مش معروفة عندنا.
+    const known = Object.prototype.hasOwnProperty.call(STATUS_MAP, order.status);
+
+    res.json({
+      found: true,
+      reference: order.reference,
+      status: order.status,
+      label: known ? info.label : order.statusAr || info.label,
+      note: info.note,
+      stage: info.stage,
+      tone: info.tone,
+      qty: order.qty,
+      total: order.total,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -495,8 +579,18 @@ export function createApiRouter(): Router {
   /** صفقة تُرسل تحديثات حالة الطلب هنا. */
   router.post("/hooks/order", (req, res) => {
     appendLine(EVENTS_LOG_FILE, { received_at: new Date().toISOString(), type: "order", payload: req.body });
-    const order = (req.body as { order?: { serial_number?: string; status_ar?: string } })?.order;
+
+    const order = (req.body as {
+      order?: { serial_number?: string; status?: string; status_ar?: string };
+    })?.order;
+
     console.log(`[qataaty] order webhook: ${order?.serial_number ?? "?"} → ${order?.status_ar ?? "?"}`);
+
+    // ده المصدر الوحيد لحالة الطلب — صفقة مالهاش نقطة API لجلبها.
+    if (order?.serial_number && order.status) {
+      void updateOrderStatus(order.serial_number, order.status, order.status_ar);
+    }
+
     res.json({ success: true });
   });
 
@@ -524,6 +618,7 @@ export function createApiRouter(): Router {
       compareAtPrice: config.compareAtPrice,
       serverless: IS_SERVERLESS,
       ordersWebhook: Boolean(config.ordersWebhookUrl),
+      trackingStore: HAS_KV,
     };
 
     if (!key) {

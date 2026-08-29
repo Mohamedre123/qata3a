@@ -10,6 +10,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Admin from "./pages/Admin";
 import Checkout from "./pages/Checkout";
 import Home from "./pages/Home";
+import Track from "./pages/Track";
 import NotFound from "./pages/NotFound";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/track" component={Track} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>

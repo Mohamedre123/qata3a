@@ -7,10 +7,12 @@ import {
   AlertCircle,
   BadgeCheck,
   Check,
+  Copy,
   Loader2,
   Lock,
   MapPin,
   Minus,
+  PackageSearch,
   Phone,
   Plus,
   ShieldCheck,
@@ -19,6 +21,7 @@ import {
   User,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "wouter";
 import {
   ApiError,
   DEFAULT_PRICING,
@@ -60,7 +63,40 @@ export default function OrderForm({
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [result, setResult] = useState<OrderResult | null>(null);
+  const [copied, setCopied] = useState(false);
   const successRef = useRef<HTMLDivElement | null>(null);
+  const [, navigate] = useLocation();
+
+  async function copyReference() {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(result.reference);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* المتصفح رفض الحافظة — الرقم ظاهر قدامه على أي حال */
+    }
+  }
+
+  /** يرجّع النموذج فاضي لطلب جديد بدل ما شاشة النجاح تفضل طريق مسدود. */
+  function startOver() {
+    setResult(null);
+    setName("");
+    setPhone1("");
+    setPhone2("");
+    setAddress("");
+    setGovernorateId("");
+    setCityId("");
+    setNote("");
+    setQty(1);
+    setErrors({});
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function goHome() {
+    navigate("/");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   const governorates = shipping?.governorates ?? [];
   const selectedGov = useMemo(
@@ -175,8 +211,30 @@ export default function OrderForm({
         </div>
 
         <p className="mt-5 text-xs font-bold text-[#7A8299]">
-          احتفظ برقم الطلب للرجوع إليه عند الاستفسار.
+          احتفظ برقم الطلب — بيه تقدر تتبّع طلبك في أي وقت.
         </p>
+
+        {/* مخارج واضحة بدل ما العميل يقف عند شاشة النجاح من غير أي خطوة بعدها */}
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
+          <Link href={`/track?ref=${encodeURIComponent(result.reference)}`} className="btn btn-navy">
+            <PackageSearch className="h-4 w-4" />
+            تتبّع طلبك
+          </Link>
+          <button onClick={copyReference} className="btn btn-ghost">
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? "تم نسخ الرقم" : "انسخ رقم الطلب"}
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-bold">
+          <button onClick={startOver} className="text-navy transition-colors hover:text-brand-red">
+            اطلب مرة تانية
+          </button>
+          <span aria-hidden className="text-navy/20">•</span>
+          <button onClick={goHome} className="text-navy transition-colors hover:text-brand-red">
+            العودة للصفحة الرئيسية
+          </button>
+        </div>
       </motion.div>
     );
   }

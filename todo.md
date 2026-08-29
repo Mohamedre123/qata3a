@@ -1,25 +1,19 @@
 # قطاعتي — الخطوات المتبقية عليك
 
-## DNS
-- [ ] عند مسجّل الدومين: سجل A لـ `@` → `76.76.21.21`
-- [ ] سجل CNAME لـ `www` → `cname.vercel-dns.com`
-- [ ] في Vercel → Settings → Domains: ضيف `qata3ty.site` و `www.qata3ty.site`
+## مهم: تخزين دائم لتتبّع الطلب
+- [ ] Vercel → Storage → Marketplace → Upstash (Redis) → Create
+- [ ] اربطه بالمشروع (بيضيف KV_REST_API_URL و KV_REST_API_TOKEN لوحده)
+- [ ] Redeploy
+> من غيره التتبّع بيشتغل بس الحالات بتضيع مع كل نشر.
 
-## متغيّرات Vercel (All Environments)
-- [ ] `ADMIN_TOKEN` = نص طويل عشوائي
-- [ ] `SAFKA_PRODUCT_ID` = 6a7c9cab42d4b8fe405be078
-- [ ] `SELL_PRICE` = 590
-- [ ] `COMPARE_AT_PRICE` = 700
-- [ ] `SAFKA_PAGE_NAME` = قطاعتي
-- [ ] `PUBLIC_URL` = https://qata3ty.site
-- [ ] Redeploy بعد إضافتهم
+## سجل الطلبات في Google Sheet
+- [ ] اعمل شيت من حساب iaomn8406@gmail.com
+- [ ] Extensions → Apps Script → الصق docs/google-sheet-webhook.gs
+- [ ] Deploy → Web app → Who has access: Anyone
+- [ ] ضيف ORDERS_WEBHOOK_URL في Vercel ثم Redeploy
 
-## الربط بصفقة
-- [ ] افتح https://qata3ty.site/admin واضغط «اربط الموقع بحساب صفقة» ثم «سماح»
-- [ ] خد المفتاح من Vercel → Logs وحطه في `SAFKA_API_KEY` ثم Redeploy
-- [ ] تأكد إن `/admin` بيقول «الموقع مربوط بمنصة صفقة ✅»
-
-## اختبار
-- [ ] https://qata3ty.site/api/health يرجّع connected: true
+## تأكيدات
+- [ ] افتح /admin وشوف «عمولتك للقطعة» — لو صفر لازم تزوّد SELL_PRICE
 - [ ] اعمل طلب تجريبي وتأكد إنه ظهر في لوحة صفقة
-- [ ] راجع نصوص الآراء في `client/src/lib/content.ts` — دي نصوص مبدئية
+- [ ] بعد ما تغيّر حالة الطلب من لوحة صفقة، افتح /track بالرقم وشوف الحالة اتحدّثت
+- [ ] راجع نصوص الآراء في client/src/lib/content.ts — دي نصوص مبدئية
