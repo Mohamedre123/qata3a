@@ -192,69 +192,85 @@ server/
 
 ---
 
-## 9) النشر على Vercel
+## 9) النشر على Vercel — دومين qata3ty.site
 
 المشروع مجهّز لـ Vercel بالكامل: الواجهة بتتقدّم كملفات ثابتة، والـ API بيشتغل
 كـ Serverless Function من `api/[...path].ts` (نفس كود `server/api.ts` بالظبط).
+ملف `vercel.json` بيضبط الـ build والـ routing لوحده، فمش محتاج تغيّر أي حاجة
+في شاشة الإعداد — بس اعمل Import للريبو واضغط Deploy.
 
-### إعدادات المشروع في Vercel
+### أ) سجلات الـ DNS
 
-Vercel بيقرأ `vercel.json` تلقائيًا، فمش محتاج تغيّر حاجة في شاشة الإعداد:
+عند مسجّل الدومين، امسح أي سجلات A أو CNAME قديمة للجذر وللـ www وحط دول:
 
-| الإعداد | القيمة |
-| --- | --- |
-| Framework Preset | Other |
-| Build Command | `npm run build:web` |
-| Output Directory | `dist/public` |
-| Install Command | `npm install` |
-
-> ملف `.npmrc` موجود في الريبو وفيه `legacy-peer-deps=true`، فالتثبيت هينجح
-> من غير ما تكتب أي flags.
-
-### متغيّرات البيئة المطلوبة
-
-من **Settings → Environment Variables** (لكل البيئات: Production / Preview / Development):
-
-| المتغيّر | القيمة | إلزامي |
+| Type | Name | Value |
 | --- | --- | --- |
-| `ADMIN_TOKEN` | نص طويل عشوائي — كلمة سر `/admin` | ✅ |
-| `SAFKA_PRODUCT_ID` | `6a7c9cab42d4b8fe405be078` | ✅ |
-| `SELL_PRICE` | `590` | ✅ |
-| `COMPARE_AT_PRICE` | `700` | ✅ |
-| `PUBLIC_URL` | `https://دومينك` (من غير `/` في الآخر) | ✅ |
-| `SAFKA_API_KEY` | مفتاح صفقة | ✅ (بعد الربط) |
-| `SAFKA_PAGE_NAME` | `قطاعتي` | اختياري |
-| `SAFKA_PROPERTY_ID` | سيبه فاضي | اختياري |
-| `ORDERS_WEBHOOK_URL` | رابط نسخة احتياطية للطلبات | اختياري |
+| A | `@` | `76.76.21.21` |
+| CNAME | `www` | `cname.vercel-dns.com` |
 
-**لا تحط `PORT`** — Vercel بيتحكم فيه.
+وفي Vercel من **Settings → Domains** ضيف `qata3ty.site` و`www.qata3ty.site`.
+شهادة الـ HTTPS بتتظبط تلقائيًا خلال دقائق.
 
-### مهم: التخزين على Vercel مؤقّت
+### ب) متغيّرات البيئة
 
-نظام الملفات على Vercel للقراءة فقط، و`/tmp` بيتمسح مع كل نشر. يعني:
+من **Settings → Environment Variables**، وعلّم على **All Environments** في كل واحد:
 
-- **`.safka-key.json` مش بيفضل** → لازم تحط `SAFKA_API_KEY` كمتغيّر بيئة.
-- **جدول «آخر الطلبات» في `/admin` هيكون فاضي** → مصدر الطلبات الحقيقي هو
-  **لوحة صفقة**.
+```
+ADMIN_TOKEN
+SAFKA_PRODUCT_ID=6a7c9cab42d4b8fe405be078
+SELL_PRICE=590
+COMPARE_AT_PRICE=700
+SAFKA_PAGE_NAME=قطاعتي
+PUBLIC_URL=https://qata3ty.site
+SAFKA_API_KEY   (بعد خطوة الربط تحت)
+```
+
+`ADMIN_TOKEN` كلمة سر صفحة `/admin` — اختار نص طويل عشوائي.
+**متحطش `PORT`** — Vercel بيتحكم فيه.
+
+### ج) الروابط اللي هتحتاجها
+
+| الرابط | تفتحه إمتى |
+| --- | --- |
+| `https://qata3ty.site/admin` | لوحة الإعداد — منها بتربط وبتتابع |
+| `https://qata3ty.site/api/safka/callback` | صفقة بتبعت المفتاح هنا |
+| `https://qata3ty.site/api/hooks/product` | صفقة بتبعت بيانات المنتج هنا |
+| `https://qata3ty.site/api/hooks/order` | صفقة بتبعت تحديثات حالة الطلب هنا |
+| `https://qata3ty.site/api/health` | تتأكد إن الـ API شغّال |
+
+التلاتة الأخيرة **مش بتتفتح بإيدك** — دي روابط صفقة بتناديها. الصفحة الوحيدة
+اللي بتفتحها هي `/admin`، وهي فيها الروابط دي جاهزة مع زرار نسخ.
+
+### د) خطوة الربط بالتفصيل
+
+1. افتح `https://qata3ty.site/admin` واكتب الـ `ADMIN_TOKEN`.
+2. اضغط **«اربط الموقع بحساب صفقة»** — الزر ده بيوديك لصفحة الموافقة على صفقة
+   وكل الخانات (الاسم، هوك المنتج، هوك الطلبات، Callback API) متملية بروابط
+   موقعك تلقائيًا. **مش هتكتب أي حاجة بإيدك.**
+3. اضغط **«سماح»** على صفحة صفقة.
+4. روح **Vercel → Logs** وابحث عن `SAFKA_API_KEY` — هتلاقي سطر:
+   `[qataaty] ⚠️  set this in your env vars → SAFKA_API_KEY=spk_...`
+5. انسخ المفتاح، وحطه في Environment Variables باسم `SAFKA_API_KEY`، واعمل
+   **Redeploy**.
+6. ارجع لـ `/admin` — لازم تلاقي **«الموقع مربوط بمنصة صفقة ✅»** مع اسم المنتج
+   وعمولتك وعدد المحافظات.
+
+خطوة 4 و5 مرة واحدة بس، وسببها إن Vercel مش بيحفظ ملفات.
+
+### هـ) التخزين على Vercel مؤقّت
+
+نظام الملفات للقراءة فقط و`/tmp` بيتمسح مع كل نشر، يعني:
+
+- `.safka-key.json` **مش بيفضل** → عشان كده المفتاح لازم يبقى متغيّر بيئة.
+- جدول **«آخر الطلبات» في `/admin` هيفضل فاضي** → مصدر الطلبات الحقيقي هو
+  **لوحة صفقة**. الصفحة نفسها بتنبّهك بده.
 - كل طلب بيتطبع في **Vercel → Logs** (ابحث عن `[qataaty] ORDER`).
 - لو عايز سجل دائم عندك، اضبط `ORDERS_WEBHOOK_URL` على Google Sheet
   (Apps Script Web App) أو Make/n8n وهتوصلك نسخة من كل طلب.
 
-### ترتيب الربط بعد النشر
+### و) اختبار بعد النشر
 
-1. انشر الموقع وخد الدومين.
-2. ضيف `PUBLIC_URL` و`ADMIN_TOKEN` والباقي، واعمل **Redeploy**.
-3. افتح `https://دومينك/admin` واضغط **«اربط الموقع بحساب صفقة»** → **«سماح»**.
-4. روح **Vercel → Logs**، هتلاقي سطر فيه `SAFKA_API_KEY=spk_...` — انسخ المفتاح.
-5. حطه في Environment Variables باسم `SAFKA_API_KEY` واعمل **Redeploy**.
-6. ارجع لـ `/admin` — لازم تلاقي **«الموقع مربوط بمنصة صفقة ✅»** واسم المنتج
-   والعمولة وعدد المحافظات ظهروا.
-
-> الخطوة 4 و5 ضرورية مرة واحدة بس، وسببها إن Vercel مش بيحفظ ملفات.
-> بعد كده المفتاح ثابت في متغيّرات البيئة.
-
-### الدومين
-
-من **Settings → Domains** ضيف دومينك واتبع تعليمات الـ DNS. بعد ما يشتغل، غيّر
-`PUBLIC_URL` للدومين الجديد واعمل **Redeploy** — عشان روابط الـ hooks اللي في
-`/admin` تبقى صح.
+1. `https://qata3ty.site/api/health` لازم يرجّع `{"ok":true,"connected":true}`.
+2. اعمل طلب تجريبي من الصفحة بالكامل.
+3. افتح لوحة صفقة وتأكد إن الطلب ظهر عندهم.
+4. لو مظهرش، شوف `/admin` و**Vercel → Logs** — رسالة الخطأ هتكون واضحة.

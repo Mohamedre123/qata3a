@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# لوحة الإعداد مش صفحة عامة
+Disallow: /admin
+
+Sitemap: https://qata3ty.site/sitemap.xml

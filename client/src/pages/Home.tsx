@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Check,
   ChevronDown,
-  Hand,
   Maximize2,
   Quote,
   ShieldCheck,
@@ -17,10 +16,10 @@ import {
   Sparkles,
   Star,
   Truck,
-  Wind,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import FeatureRail from "@/components/FeatureRail";
 import OrderForm from "@/components/OrderForm";
 import Reveal from "@/components/Reveal";
 import { Footer, Header, MobileOrderBar, TopBar } from "@/components/SiteChrome";
@@ -29,14 +28,11 @@ import {
   PRODUCT_NAME,
   comparison,
   defaultFaq,
-  features,
   productImages,
   reviews,
   specs,
   trustPoints,
 } from "@/lib/content";
-
-const featureIcons = { sparkles: Sparkles, wind: Wind, hand: Hand, shield: ShieldCheck } as const;
 
 export default function Home() {
   const { data: storefront, pricing } = useStorefront();
@@ -84,39 +80,39 @@ export default function Home() {
           className="pointer-events-none absolute -left-32 top-64 h-80 w-80 rounded-full bg-navy/8 blur-3xl"
         />
 
-        <div className="shell grid items-center gap-10 py-10 lg:grid-cols-[1.02fr_1fr] lg:gap-16 lg:py-16">
+        <div className="shell grid items-center gap-7 py-6 sm:gap-10 sm:py-10 lg:grid-cols-[1.02fr_1fr] lg:gap-16 lg:py-16">
           {/* النص */}
           <motion.div
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 order-1"
+            className="relative z-10 order-2 lg:order-1"
           >
             <span className="kicker">{PRODUCT_NAME}</span>
 
-            <h1 className="mt-5 font-display text-[clamp(2.35rem,8vw,4.6rem)] font-black leading-[1.32] tracking-[-.035em] text-navy">
+            <h1 className="mt-4 font-display text-[clamp(2.05rem,5vw,3.35rem)] font-black leading-[1.3] tracking-[-.03em] text-navy">
               مساحة نضيفة.
               <span className="block text-brand-red">تحضير أهدأ.</span>
             </h1>
 
-            <p className="mt-5 max-w-[30rem] text-[.98rem] leading-8 text-[#4C5573] sm:text-lg">
+            <p className="mt-4 max-w-[27rem] text-[.92rem] leading-[1.95] text-[#4C5573] sm:text-[1rem]">
               لوح تقطيع ستانلس ستيل ما بيمتصش الروائح ولا بيتخدش زي البلاستيك. سطح واحد
               للّحمة والخضار والعجين — وشطفة مية بتخلّيه زي الجديد.
             </p>
 
             {/* السعر */}
-            <div className="mt-7 flex flex-wrap items-end gap-x-5 gap-y-3">
+            <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-3">
               <div className="flex items-end gap-2">
                 <motion.span
                   key={pricing.sell}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="font-display text-[3.4rem] font-black leading-none tracking-[-.05em] text-navy sm:text-6xl"
+                  className="font-display text-[2.7rem] font-black leading-none tracking-[-.04em] text-navy sm:text-[3.15rem]"
                 >
                   {pricing.sell}
                 </motion.span>
-                <span className="mb-2 font-display text-lg font-extrabold text-navy">جنيه</span>
+                <span className="mb-1.5 font-display text-base font-extrabold text-navy">جنيه</span>
               </div>
 
               <div className="mb-1.5 border-r-2 border-navy/12 pr-4">
@@ -133,7 +129,7 @@ export default function Home() {
             </div>
 
             {/* الأزرار */}
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <button onClick={scrollToOrder} className="btn btn-primary btn-lg btn-pulse">
                 <ShoppingBag className="h-5 w-5" />
                 اطلب لوحك الآن
@@ -146,7 +142,7 @@ export default function Home() {
             </div>
 
             {/* نقاط ثقة */}
-            <ul className="mt-8 grid gap-2.5 text-sm font-bold text-[#4C5573] sm:grid-cols-2">
+            <ul className="mt-7 grid gap-2.5 text-sm font-bold text-[#4C5573] sm:grid-cols-2">
               {["شحن لكل محافظات مصر", "استبدال خلال ٧ أيام", "ستانلس ستيل أصلي", "بدون أي دفع مقدم"].map(
                 (item, index) => (
                   <Reveal key={item} delay={0.35 + index * 0.06} direction="right" className="flex items-center gap-2">
@@ -165,9 +161,9 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.75, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className="relative order-2"
+            className="relative order-1 lg:order-2"
           >
-            <div className="hero-frame sheen aspect-[4/5] sm:aspect-[5/5] lg:aspect-[4/5]">
+            <div className="hero-frame sheen aspect-[5/4] sm:aspect-[16/11] lg:aspect-[4/5]">
               <motion.img
                 style={{ y: heroImageY }}
                 src={productImages[0].src}
@@ -175,7 +171,7 @@ export default function Home() {
                 width={1200}
                 height={1600}
                 fetchPriority="high"
-                className="scale-105 object-[58%_center]"
+                className="scale-105 object-[58%_38%] lg:object-[58%_center]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/70 via-transparent to-transparent" />
 
@@ -236,7 +232,7 @@ export default function Home() {
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <Reveal className="max-w-xl">
               <span className="kicker !text-[#FF8E91]">ليه قطاعتي؟</span>
-              <h2 className="mt-4 font-display text-[clamp(1.9rem,5.5vw,3rem)] font-black leading-[1.3] tracking-[-.025em]">
+              <h2 className="mt-4 font-display text-[clamp(1.65rem,3.6vw,2.45rem)] font-black leading-[1.3] tracking-[-.02em]">
                 أربع تفاصيل بتفرق
                 <br />
                 في مطبخك كل يوم.
@@ -250,27 +246,7 @@ export default function Home() {
             </Reveal>
           </div>
 
-          <div className="mt-11 grid gap-px overflow-hidden rounded-2xl bg-white/12 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature, index) => {
-              const Icon = featureIcons[feature.icon as keyof typeof featureIcons];
-              return (
-                <Reveal
-                  key={feature.number}
-                  delay={index * 0.08}
-                  className="group relative bg-navy p-6 transition-colors duration-300 hover:bg-[#161B7F] sm:p-7"
-                >
-                  <div className="flex items-start justify-between">
-                    <span className="font-display text-xs font-black tracking-[.16em] text-[#FF8E91]">
-                      {feature.number}
-                    </span>
-                    <Icon className="h-6 w-6 text-white/85 transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                  <h3 className="mt-10 font-display text-xl font-extrabold leading-[1.45]">{feature.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-white/65">{feature.text}</p>
-                </Reveal>
-              );
-            })}
-          </div>
+          <FeatureRail />
         </div>
       </section>
 
@@ -521,7 +497,7 @@ export default function Home() {
       <section className="relative overflow-hidden bg-navy-deep py-14 text-white sm:py-20">
         <div aria-hidden className="absolute inset-0 grid-lines-light" />
         <Reveal className="shell relative text-center">
-          <h2 className="mx-auto max-w-2xl font-display text-[clamp(1.8rem,5.5vw,3rem)] font-black leading-[1.3] tracking-[-.025em]">
+          <h2 className="mx-auto max-w-2xl font-display text-[clamp(1.65rem,3.6vw,2.45rem)] font-black leading-[1.3] tracking-[-.02em]">
             جاهز تبدّل لوح التقطيع بتاعك؟
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-8 text-white/65 sm:text-base">
