@@ -64,7 +64,7 @@ export default function Checkout() {
 
               <div className="p-6">
                 <p className="text-xs font-bold text-white/60">المنتج</p>
-                <h2 className="mt-1 font-display text-xl font-extrabold">{PRODUCT_NAME}</h2>
+                <h2 className="mt-1 font-display text-xl font-extrabold leading-[1.5]">{PRODUCT_NAME}</h2>
 
                 <div className="divider-dashed my-5 opacity-40" />
 

@@ -13,7 +13,7 @@ export default function NotFound() {
         <p className="mt-7 font-display text-[clamp(4rem,16vw,7rem)] font-black leading-none tracking-tight text-navy/12">
           404
         </p>
-        <h1 className="-mt-4 font-display text-2xl font-black text-navy sm:text-3xl">
+        <h1 className="-mt-4 font-display text-2xl font-black leading-[1.5] text-navy sm:text-3xl">
           الصفحة دي مش موجودة.
         </h1>
         <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-[#5C6480]">

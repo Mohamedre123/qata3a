@@ -90,7 +90,7 @@ img { max-width: 100%; display: block; }
 
   .h-section {
     font-family: var(--font-display); font-weight: 900; color: var(--navy);
-    font-size: clamp(1.65rem, 3.6vw, 2.45rem); line-height: 1.3; letter-spacing: -.02em;
+    font-size: clamp(1.6rem, 3.4vw, 2.35rem); line-height: 1.5; letter-spacing: -.015em;
   }
 
   /* --------------------------------------------------------------- الأزرار */
@@ -244,9 +244,9 @@ img { max-width: 100%; display: block; }
   .thumb:hover img { transform: scale(1.07); }
   .thumb[data-active="true"] { box-shadow: 0 0 0 3px var(--red), 0 0 0 6px rgba(242, 11, 16, .18); }
 
-  /* ------------------------------------------------- كاروسيل المميزات */
+  /* ------------------------------------------------------ الشرائط القابلة للسحب */
   /* على الموبايل: سحب أفقي بالإصبع مع توقّف على كل بطاقة.
-     من lg وطالع: شبكة عادية بأربعة أعمدة. */
+     من lg وطالع: شبكة عادية — عدد الأعمدة بيتحدّد من Tailwind لكل استخدام. */
   .rail {
     display: flex; gap: .85rem;
     overflow-x: auto; overscroll-behavior-x: contain;
@@ -259,26 +259,29 @@ img { max-width: 100%; display: block; }
   .rail::-webkit-scrollbar { display: none; }
 
   .rail > * {
-    flex: 0 0 78%;
+    flex: 0 0 80%;
     scroll-snap-align: start;
     border-radius: 1.1rem;
   }
-  @media (min-width: 480px) { .rail > * { flex-basis: 58%; } }
-  @media (min-width: 768px) { .rail > * { flex-basis: 40%; } }
+  @media (min-width: 480px) { .rail > * { flex-basis: 60%; } }
+  @media (min-width: 768px) { .rail > * { flex-basis: 42%; } }
 
   @media (min-width: 1024px) {
-    .rail {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
-      overflow: visible; padding-bottom: 0;
-      background: rgba(255, 255, 255, .12);
-      border-radius: 1.4rem;
-    }
-    .rail > * { flex: none; border-radius: 0; }
-    .rail > *:first-child { border-start-start-radius: 1.4rem; border-end-start-radius: 1.4rem; }
-    .rail > *:last-child { border-start-end-radius: 1.4rem; border-end-end-radius: 1.4rem; }
+    .rail { display: grid; overflow: visible; padding-bottom: 0; }
+    .rail > * { flex: none; }
   }
 
-  /* أزرار تحريك الكاروسيل */
+  /* شكل المميزات: خطوط فاصلة رفيعة بدل المسافات على الشاشات الكبيرة */
+  @media (min-width: 1024px) {
+    .rail-divided {
+      gap: 1px; background: rgba(255, 255, 255, .12); border-radius: 1.4rem;
+    }
+    .rail-divided > * { border-radius: 0; }
+    .rail-divided > *:first-child { border-start-start-radius: 1.4rem; border-end-start-radius: 1.4rem; }
+    .rail-divided > *:last-child { border-start-end-radius: 1.4rem; border-end-end-radius: 1.4rem; }
+  }
+
+  /* أزرار تحريك الشريط */
   .rail-nav {
     display: grid; place-items: center; width: 40px; height: 40px;
     border-radius: 50%; border: 1px solid rgba(255, 255, 255, .28);
@@ -289,8 +292,16 @@ img { max-width: 100%; display: block; }
   .rail-nav:active { transform: scale(.92); }
   .rail-nav:disabled { opacity: .3; cursor: not-allowed; }
 
+  /* نسخة للأقسام ذات الخلفية الفاتحة */
+  .rail-nav-dark {
+    border-color: rgba(17, 21, 107, .2); background: #fff; color: var(--navy);
+    box-shadow: 0 6px 16px -10px rgba(17, 21, 107, .6);
+  }
+  .rail-nav-dark:hover { background: #fff; border-color: rgba(17, 21, 107, .4); }
+
   /* مؤشّر النقاط */
   .rail-dot { height: 6px; width: 6px; border-radius: 999px; background: rgba(255, 255, 255, .3); transition: all .25s var(--ease); }
+  .rail-dot-dark { background: rgba(17, 21, 107, .2); }
   .rail-dot[data-active="true"] { width: 22px; background: var(--red); }
 
   /* ------------------------------------------------------- جدول المقارنة */

@@ -146,7 +146,7 @@ export default function OrderForm({
           <Check className="h-10 w-10" strokeWidth={3} />
         </motion.span>
 
-        <h3 className="mt-6 font-display text-3xl font-black text-navy">تم استلام طلبك ✅</h3>
+        <h3 className="mt-6 font-display text-3xl font-black leading-[1.5] text-navy">تم استلام طلبك ✅</h3>
         <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[#5C6480]">
           هنكلمك على الرقم <b className="text-navy">{phone1}</b> خلال ٢٤ ساعة لتأكيد الطلب والعنوان.
           الدفع عند الاستلام.
@@ -189,7 +189,7 @@ export default function OrderForm({
           <span className="dot-live" />
           <span className="text-xs font-extrabold text-[#16A34A]">الطلب متاح الآن</span>
         </div>
-        <h3 className="mt-2 font-display text-2xl font-black text-navy sm:text-3xl">
+        <h3 className="mt-2 font-display text-2xl font-black leading-[1.5] text-navy sm:text-3xl">
           اطلب دلوقتي — الدفع عند الاستلام
         </h3>
         <p className="mt-2 text-sm leading-6 text-[#5C6480]">

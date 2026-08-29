@@ -160,7 +160,7 @@ export default function Admin() {
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-navy text-white">
             <KeyRound className="h-5 w-5" />
           </span>
-          <h1 className="mt-5 font-display text-2xl font-black text-navy">لوحة إعداد {BRAND.name}</h1>
+          <h1 className="mt-5 font-display text-2xl font-black leading-[1.5] text-navy">لوحة إعداد {BRAND.name}</h1>
           <p className="mt-2 text-sm leading-7 text-[#5C6480]">
             اكتب <code className="rounded bg-[#F3F4FF] px-1.5 py-0.5 text-xs">ADMIN_TOKEN</code> الموجود
             في ملف <code className="rounded bg-[#F3F4FF] px-1.5 py-0.5 text-xs">.env</code>.

@@ -19,9 +19,19 @@ const candidates = [
   path.resolve(process.cwd(), ".env"),
 ].filter(Boolean) as string[];
 
+/**
+ * `process.loadEnvFile` بيكتب فوق المتغيّرات الموجودة أصلًا، وده معناه إن سطر
+ * فاضي في .env يقدر يلغي قيمة متظبطة من البيئة. بنعكس ده: اللي جاي من البيئة
+ * له الأولوية، و.env بيملأ الناقص بس.
+ */
+const fromEnvironment = { ...process.env };
+
 for (const envPath of candidates) {
   try {
     process.loadEnvFile(envPath);
+    for (const [key, value] of Object.entries(fromEnvironment)) {
+      if (value !== undefined) process.env[key] = value;
+    }
     break;
   } catch {
     /* الملف غير موجود أو غير مقروء — نجرّب المسار التالي */

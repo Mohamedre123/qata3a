@@ -21,6 +21,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FeatureRail from "@/components/FeatureRail";
 import OrderForm from "@/components/OrderForm";
+import Rail from "@/components/Rail";
 import Reveal from "@/components/Reveal";
 import { Footer, Header, MobileOrderBar, TopBar } from "@/components/SiteChrome";
 import { egp, useStorefront } from "@/lib/api";
@@ -90,7 +91,7 @@ export default function Home() {
           >
             <span className="kicker">{PRODUCT_NAME}</span>
 
-            <h1 className="mt-4 font-display text-[clamp(2.05rem,5vw,3.35rem)] font-black leading-[1.3] tracking-[-.03em] text-navy">
+            <h1 className="mt-4 font-display text-[clamp(2rem,4.6vw,3.1rem)] font-black leading-[1.5] tracking-[-.02em] text-navy">
               مساحة نضيفة.
               <span className="block text-brand-red">تحضير أهدأ.</span>
             </h1>
@@ -232,7 +233,7 @@ export default function Home() {
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <Reveal className="max-w-xl">
               <span className="kicker !text-[#FF8E91]">ليه قطاعتي؟</span>
-              <h2 className="mt-4 font-display text-[clamp(1.65rem,3.6vw,2.45rem)] font-black leading-[1.3] tracking-[-.02em]">
+              <h2 className="mt-4 font-display text-[clamp(1.6rem,3.4vw,2.35rem)] font-black leading-[1.5] tracking-[-.015em]">
                 أربع تفاصيل بتفرق
                 <br />
                 في مطبخك كل يوم.
@@ -367,9 +368,9 @@ export default function Home() {
             <h2 className="h-section mt-4">ناس جرّبته قبلك.</h2>
           </Reveal>
 
-          <div className="mt-9 grid gap-5 md:grid-cols-3">
+          <Rail count={reviews.length} hint="اسحب لقراءة باقي الآراء" tone="dark" className="lg:mt-9 lg:grid-cols-3 lg:gap-5">
             {reviews.map((review, index) => (
-              <Reveal key={review.name} delay={index * 0.09} className="card relative p-6">
+              <Reveal key={review.name} delay={index * 0.09} role="listitem" className="card relative p-6">
                 <Quote className="absolute left-5 top-5 h-8 w-8 text-navy/8" />
                 <div className="flex gap-1">
                   {Array.from({ length: review.rating }).map((_, star) => (
@@ -388,7 +389,7 @@ export default function Home() {
                 </div>
               </Reveal>
             ))}
-          </div>
+          </Rail>
         </div>
       </section>
 
@@ -497,7 +498,7 @@ export default function Home() {
       <section className="relative overflow-hidden bg-navy-deep py-14 text-white sm:py-20">
         <div aria-hidden className="absolute inset-0 grid-lines-light" />
         <Reveal className="shell relative text-center">
-          <h2 className="mx-auto max-w-2xl font-display text-[clamp(1.65rem,3.6vw,2.45rem)] font-black leading-[1.3] tracking-[-.02em]">
+          <h2 className="mx-auto max-w-2xl font-display text-[clamp(1.6rem,3.4vw,2.35rem)] font-black leading-[1.5] tracking-[-.015em]">
             جاهز تبدّل لوح التقطيع بتاعك؟
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-8 text-white/65 sm:text-base">
