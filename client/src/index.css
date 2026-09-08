@@ -357,6 +357,60 @@ img { max-width: 100%; display: block; }
   }
   @media (min-width: 1024px) { .mobile-bar { display: none; } }
 
+  /* ------------------------------------------------------- زر الواتساب */
+  .wa-fab {
+    position: fixed; z-index: 44;
+    left: 1rem;                               /* الشمال فعليًا — الصفحة RTL فـ inset-inline-start كان بيوديه يمين */
+    bottom: 1rem;
+    display: inline-flex; align-items: center; gap: 0; overflow: hidden;
+    height: 54px; width: 54px; padding: 0;
+    border-radius: 999px;
+    background: #25D366; color: #fff;
+    box-shadow: 0 10px 26px -8px rgba(37, 211, 102, .75), 0 2px 8px rgba(0, 0, 0, .18);
+    -webkit-tap-highlight-color: transparent;
+    transition: width .32s var(--ease), padding .32s var(--ease),
+                background-color .2s var(--ease), box-shadow .25s var(--ease),
+                bottom .3s var(--ease);
+  }
+  .wa-fab:hover { background: #1EBE5A; box-shadow: 0 14px 30px -8px rgba(37, 211, 102, .85); }
+
+  /* على الموبايل بيرتفع فوق شريط الطلب الثابت لما يظهر */
+  .wa-fab[data-raised="true"] { bottom: calc(5.6rem + env(safe-area-inset-bottom)); }
+  @media (min-width: 1024px) {
+    .wa-fab, .wa-fab[data-raised="true"] { bottom: 1.5rem; left: 1.5rem; height: 58px; width: 58px; }
+  }
+
+  .wa-icon { width: 27px; height: 27px; flex-shrink: 0; margin-inline: 13.5px; position: relative; z-index: 1; }
+  @media (min-width: 1024px) { .wa-icon { width: 29px; height: 29px; margin-inline: 14.5px; } }
+
+  .wa-label {
+    position: relative; z-index: 1;
+    white-space: nowrap; opacity: 0;
+    font-family: var(--font-display); font-weight: 800; font-size: .88rem;
+    transition: opacity .22s var(--ease);
+  }
+
+  /* التوسّع عند المرور — للأجهزة اللي فيها مؤشّر حقيقي فقط، مش لمس */
+  @media (hover: hover) and (pointer: fine) {
+    .wa-fab:hover, .wa-fab:focus-visible { width: 186px; }
+    .wa-fab:hover .wa-label, .wa-fab:focus-visible .wa-label { opacity: 1; }
+    .wa-fab:hover .wa-icon, .wa-fab:focus-visible .wa-icon { margin-inline-end: .55rem; }
+  }
+
+  /* حلقات النبض */
+  .wa-ring {
+    position: absolute; inset: 0; border-radius: inherit;
+    border: 2px solid #25D366; opacity: 0;
+    animation: wa-pulse 2.8s var(--ease) infinite;
+    pointer-events: none;
+  }
+  .wa-ring-delayed { animation-delay: 1.4s; }
+  @keyframes wa-pulse {
+    0%   { opacity: .6; transform: scale(1); }
+    70%  { opacity: 0;  transform: scale(1.75); }
+    100% { opacity: 0;  transform: scale(1.75); }
+  }
+
   /* ------------------------------------------------------------- مساعدات */
   .divider-dashed { height: 1px; background-image: linear-gradient(90deg, rgba(17, 21, 107, .28) 50%, transparent 0); background-size: 9px 1px; background-repeat: repeat-x; }
   .skeleton { background: linear-gradient(90deg, #E9E5DD 25%, #F3EFE8 50%, #E9E5DD 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: .6rem; }
@@ -377,4 +431,5 @@ img { max-width: 100%; display: block; }
     transition-duration: .01ms !important;
   }
   .marquee-track { animation: none; }
+  .wa-ring { animation: none; opacity: 0; }
 }

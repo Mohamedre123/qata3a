@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import WhatsAppButton from "./components/WhatsAppButton";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { trackPageView } from "./lib/analytics";
 import Admin from "./pages/Admin";
@@ -23,14 +24,21 @@ function Router() {
     trackPageView();
   }, [location]);
 
+  // لوحة الإعداد صفحة داخلية — مش محتاجة زر تواصل العملاء.
+  const showWhatsApp = !location.startsWith("/admin");
+
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/checkout" component={Checkout} />
-      <Route path="/track" component={Track} />
-      <Route path="/admin" component={Admin} />
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/checkout" component={Checkout} />
+        <Route path="/track" component={Track} />
+        <Route path="/admin" component={Admin} />
+        <Route component={NotFound} />
+      </Switch>
+
+      {showWhatsApp && <WhatsAppButton />}
+    </>
   );
 }
 
