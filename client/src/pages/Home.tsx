@@ -25,7 +25,9 @@ import Rail from "@/components/Rail";
 import Reveal from "@/components/Reveal";
 import { Footer, Header, MobileOrderBar, TopBar } from "@/components/SiteChrome";
 import { egp, useStorefront } from "@/lib/api";
+import { trackAddToCart, trackViewContent } from "@/lib/analytics";
 import {
+  PRODUCT_ID,
   PRODUCT_NAME,
   comparison,
   defaultFaq,
@@ -47,9 +49,30 @@ export default function Home() {
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroImageY = useTransform(scrollYProgress, [0, 1], ["0%", reduce ? "0%" : "12%"]);
 
+  const viewTracked = useRef(false);
+
+  // ViewContent بعد ما السعر الحقيقي يوصل، عشان القيمة المرسلة تكون صحيحة.
+  useEffect(() => {
+    if (viewTracked.current || !storefront) return;
+    viewTracked.current = true;
+    trackViewContent({
+      value: pricing.sell,
+      qty: 1,
+      contentId: PRODUCT_ID,
+      contentName: PRODUCT_NAME,
+    });
+  }, [storefront, pricing.sell]);
+
+  /** كل أزرار «اطلب» بتعدّي من هنا — فده أنسب مكان لحدث AddToCart. */
   const scrollToOrder = useCallback(() => {
+    trackAddToCart({
+      value: pricing.sell,
+      qty: 1,
+      contentId: PRODUCT_ID,
+      contentName: PRODUCT_NAME,
+    });
     document.getElementById("order")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
+  }, [pricing.sell]);
 
   // أسئلة المنتج من صفقة لو موجودة، وإلا الأسئلة الافتراضية.
   const faqItems = useMemo(() => {

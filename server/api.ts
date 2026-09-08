@@ -20,6 +20,7 @@ import {
   writeStoredKey,
 } from "./config.js";
 import { FALLBACK_GOVERNORATES } from "./fallback-shipping.js";
+import { HAS_META_CAPI, newEventId, sendPurchaseEvent } from "./meta-capi.js";
 import {
   HAS_KV,
   STATUS_MAP,
@@ -41,6 +42,10 @@ import {
 // ---------------------------------------------------------------------------
 // أدوات مساعدة
 // ---------------------------------------------------------------------------
+
+/** لازم يطابق PRODUCT_ID في client/src/lib/content.ts. */
+const PIXEL_CONTENT_ID = process.env.PIXEL_CONTENT_ID || "qataaty-stainless-board";
+const PIXEL_CONTENT_NAME = "لوح تقطيع ستانلس ستيل";
 
 const ARABIC_DIGITS = /[٠-٩۰-۹]/g;
 
@@ -361,6 +366,32 @@ export function createApiRouter(): Router {
     const subtotal = config.sellPrice * qty;
     const total = config.totalIncludesShipping ? subtotal + shipping : subtotal;
 
+    // معرّف موحّد لحدث الشراء: بيتبعت لميتا من السيرفر ومن المتصفح بنفس القيمة
+    // عشان ميتا تحسبه حدث واحد مش اتنين.
+    const purchaseEventId = newEventId();
+
+    /**
+     * العميل شاف شاشة نجاح، يبقى دي عملية شراء بالنسبة للإعلانات — سواء وصل
+     * الطلب لصفقة أو اتسجّل محليًا. بنبعتها من السيرفر كمان عشان الأحداث اللي
+     * بيمنعها المتصفح ما تضيعش.
+     */
+    const reportPurchase = (orderRef: string) =>
+      void sendPurchaseEvent({
+        eventId: purchaseEventId,
+        eventTime: Math.floor(Date.now() / 1000),
+        value: total,
+        quantity: qty,
+        contentId: PIXEL_CONTENT_ID,
+        contentName: PIXEL_CONTENT_NAME,
+        orderRef,
+        customer: { name, phone: phone1, city: cityName, governorate: governorateName },
+        clientIp: clientIp(req),
+        userAgent: text(req.headers["user-agent"], 200),
+        sourceUrl: text(req.headers.referer, 300) || undefined,
+        fbp: text(body.fbp, 120) || undefined,
+        fbc: text(body.fbc, 200) || undefined,
+      });
+
     const record = {
       ref: `QT-${Date.now().toString(36).toUpperCase()}`,
       created_at: new Date().toISOString(),
@@ -384,6 +415,7 @@ export function createApiRouter(): Router {
       appendLine(ORDERS_LOG_FILE, record);
       void backupOrder(record);
       console.warn(`[qataaty] order saved locally (not connected): ${record.ref}`);
+      reportPurchase(record.ref);
       void saveOrderStatus({
         reference: record.ref,
         status: "pending",
@@ -397,6 +429,7 @@ export function createApiRouter(): Router {
         success: true,
         pendingSync: true,
         reference: record.ref,
+        eventId: purchaseEventId,
         summary: { qty, unitPrice: config.sellPrice, subtotal, shipping, total },
       });
       return;
@@ -433,6 +466,9 @@ export function createApiRouter(): Router {
       const serial = result?.data?.serial_number || record.ref;
       console.log(`[qataaty] order sent to safka: ${serial}`);
 
+      // Conversions API — fire-and-forget، أي فشل فيه ما بيأثرش على الطلب.
+      reportPurchase(serial);
+
       // نسجّل الطلب عشان العميل يقدر يتتبّعه برقمه من صفحة /track،
       // والحالة بتتحدّث بعد كده من webhook صفقة.
       void saveOrderStatus({
@@ -449,6 +485,7 @@ export function createApiRouter(): Router {
         success: true,
         pendingSync: false,
         reference: serial,
+        eventId: purchaseEventId,
         orderId: result?.data?._id ?? null,
         status: result?.data?.status ?? "pending",
         summary: { qty, unitPrice: config.sellPrice, subtotal, shipping, total },
@@ -459,6 +496,7 @@ export function createApiRouter(): Router {
       appendLine(ORDERS_LOG_FILE, record);
       void backupOrder(record);
       console.error(`[qataaty] order FAILED (${record.ref}):`, safka.message);
+      reportPurchase(record.ref);
       void saveOrderStatus({
         reference: record.ref,
         status: "pending",
@@ -474,6 +512,7 @@ export function createApiRouter(): Router {
         success: true,
         pendingSync: true,
         reference: record.ref,
+        eventId: purchaseEventId,
         summary: { qty, unitPrice: config.sellPrice, subtotal, shipping, total },
       });
     }
@@ -619,6 +658,7 @@ export function createApiRouter(): Router {
       serverless: IS_SERVERLESS,
       ordersWebhook: Boolean(config.ordersWebhookUrl),
       trackingStore: HAS_KV,
+      metaCapi: HAS_META_CAPI,
     };
 
     if (!key) {

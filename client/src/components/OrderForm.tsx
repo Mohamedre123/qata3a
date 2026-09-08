@@ -31,7 +31,8 @@ import {
   type OrderResult,
   type Pricing,
 } from "@/lib/api";
-import { PRODUCT_NAME, productImages } from "@/lib/content";
+import { PRODUCT_ID, PRODUCT_NAME, productImages } from "@/lib/content";
+import { readMetaCookies, trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
 
 type Errors = Partial<Record<"name" | "phone1" | "phone2" | "address" | "governorateId", string>>;
 
@@ -65,6 +66,19 @@ export default function OrderForm({
   const [result, setResult] = useState<OrderResult | null>(null);
   const [copied, setCopied] = useState(false);
   const successRef = useRef<HTMLDivElement | null>(null);
+  const checkoutTracked = useRef(false);
+
+  /** أول ما العميل يبدأ يكتب فعلًا نعتبره بدأ خطوة الشراء — مرة واحدة بس. */
+  function markCheckoutStarted() {
+    if (checkoutTracked.current) return;
+    checkoutTracked.current = true;
+    trackInitiateCheckout({
+      value: pricing.sell * qty,
+      qty,
+      contentId: PRODUCT_ID,
+      contentName: PRODUCT_NAME,
+    });
+  }
   const [, navigate] = useLocation();
 
   async function copyReference() {
@@ -150,8 +164,20 @@ export default function OrderForm({
         cityId: cityId || undefined,
         qty,
         note: note.trim() || undefined,
+        ...readMetaCookies(),
       });
       setResult(response);
+
+      // أهم حدث في القمع. eventId جاي من السيرفر، ونفسه اتبعت لـ Meta CAPI
+      // فميتا بتحسب الحدثين واحد.
+      trackPurchase({
+        value: response.summary.total,
+        qty: response.summary.qty,
+        contentId: PRODUCT_ID,
+        contentName: PRODUCT_NAME,
+        eventId: response.eventId,
+        orderRef: response.reference,
+      });
     } catch (error) {
       setFailure(
         error instanceof ApiError
@@ -264,7 +290,10 @@ export default function OrderForm({
               <input
                 name="name"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  markCheckoutStarted();
+                  setName(event.target.value);
+                }}
                 onBlur={() => setErrors((prev) => ({ ...prev, name: validate().name }))}
                 aria-invalid={Boolean(errors.name)}
                 autoComplete="name"
@@ -282,7 +311,10 @@ export default function OrderForm({
               <input
                 name="phone1"
                 value={phone1}
-                onChange={(event) => setPhone1(toLatinDigits(event.target.value).replace(/\D/g, "").slice(0, 11))}
+                onChange={(event) => {
+                  markCheckoutStarted();
+                  setPhone1(toLatinDigits(event.target.value).replace(/\D/g, "").slice(0, 11));
+                }}
                 onBlur={() => setErrors((prev) => ({ ...prev, phone1: validate().phone1 }))}
                 aria-invalid={Boolean(errors.phone1)}
                 inputMode="numeric"

@@ -45,12 +45,17 @@ export type OrderInput = {
   cityId?: string;
   qty: number;
   note?: string;
+  /** كوكيز ميتا للمطابقة الأفضل في Conversions API. */
+  fbp?: string;
+  fbc?: string;
 };
 
 export type OrderResult = {
   success: true;
   pendingSync: boolean;
   reference: string;
+  /** معرّف حدث الشراء — يُمرَّر لبيكسل ميتا لمنع تكرار العدّ مع الـ CAPI. */
+  eventId?: string;
   orderId?: string | null;
   status?: string;
   summary: { qty: number; unitPrice: number; subtotal: number; shipping: number; total: number };

@@ -11,6 +11,9 @@ export const BRAND = {
   whatsapp: "",
 };
 
+/** معرّف المنتج للبيكسلات — لازم يبقى ثابت عشان تقارير الإعلانات تتجمّع صح. */
+export const PRODUCT_ID = "qataaty-stainless-board";
+
 export const PRODUCT_NAME = "لوح تقطيع ستانلس ستيل";
 
 export const productImages = [
