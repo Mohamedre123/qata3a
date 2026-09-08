@@ -13,11 +13,13 @@ const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "1979727459402689";
 const TIKTOK_PIXEL_ID = import.meta.env.VITE_TIKTOK_PIXEL_ID || "DAFKHSJC77U3EU7G6J30";
 
 /**
- * حدث الشراء عند تيك توك. الافتراضي PlaceAnOrder لأنه الأدق مع الدفع عند
- * الاستلام (العميل طلب، لسه مدفعش). لو حملتك متضبّطة على «Complete Payment»
- * غيّر المتغيّر ده لـ CompletePayment.
+ * حدث الشراء عند تيك توك.
+ *
+ * CompletePayment هو اللي بتتحسّن عليه حملات التسوّق في تيك توك، وهو اللي
+ * متضبّطة عليه حملتنا. (PlaceAnOrder أدقّ حرفيًا مع الدفع عند الاستلام لأن
+ * العميل لسه مدفعش، بس التحسين مش بيشتغل عليه كويس.)
  */
-const TIKTOK_PURCHASE_EVENT = import.meta.env.VITE_TIKTOK_PURCHASE_EVENT || "PlaceAnOrder";
+const TIKTOK_PURCHASE_EVENT = import.meta.env.VITE_TIKTOK_PURCHASE_EVENT || "CompletePayment";
 
 const CURRENCY = "EGP";
 
@@ -138,9 +140,11 @@ function meta(event: string, params?: Record<string, unknown>, options?: { event
   }
 }
 
-function tiktok(event: string, params?: Record<string, unknown>) {
+function tiktok(event: string, params?: Record<string, unknown>, eventId?: string) {
   try {
-    window.ttq?.track?.(event, params ?? {});
+    // تيك توك بياخد event_id في المعامل التالت عشان يدمج حدث المتصفح مع
+    // حدث Events API الجاي من السيرفر.
+    window.ttq?.track?.(event, params ?? {}, eventId ? { event_id: eventId } : undefined);
   } catch {
     /* نفس الكلام */
   }
@@ -212,8 +216,9 @@ export function trackInitiateCheckout(item: Contents) {
 /**
  * أهم حدث: الطلب اتأكد.
  *
- * `eventId` جاي من السيرفر، ونفسه بيتبعت لـ Meta Conversions API — كده ميتا
- * بتعرف إن الحدثين واحد وما بتحسبهوش مرتين. راجع server/meta-capi.ts.
+ * `eventId` جاي من السيرفر، ونفسه بيتبعت لـ Meta Conversions API و
+ * TikTok Events API — كده كل منصة بتعرف إن حدث المتصفح وحدث السيرفر حدث
+ * واحد وما بتحسبهومش مرتين. راجع server/meta-capi.ts و server/tiktok-events.ts.
  */
 export function trackPurchase(item: Contents & { eventId?: string; orderRef: string }) {
   const { value, qty, contentId, contentName, eventId, orderRef } = item;
@@ -233,19 +238,24 @@ export function trackPurchase(item: Contents & { eventId?: string; orderRef: str
     eventId ? { eventID: eventId } : undefined,
   );
 
-  tiktok(TIKTOK_PURCHASE_EVENT, {
-    contents: [{ content_id: contentId, content_name: contentName, content_type: "product", quantity: qty, price: value / qty }],
-    value,
-    currency: CURRENCY,
-    order_id: orderRef,
-  });
+  tiktok(
+    TIKTOK_PURCHASE_EVENT,
+    {
+      contents: [{ content_id: contentId, content_name: contentName, content_type: "product", quantity: qty, price: value / qty }],
+      value,
+      currency: CURRENCY,
+      order_id: orderRef,
+    },
+    eventId,
+  );
 }
 
 /**
- * كوكيز ميتا (_fbp و _fbc) — بتتبعت مع الطلب للسيرفر عشان Conversions API
- * يقدر يطابق الحدث بنفس زائر البيكسل. مش بيانات شخصية، معرّفات ميتا بس.
+ * معرّفات الإعلانات (_fbp و _fbc لميتا، _ttp و ttclid لتيك توك) — بتتبعت مع
+ * الطلب للسيرفر عشان الـ Conversions/Events API يقدر يطابق الحدث بنفس الزائر.
+ * دي معرّفات المنصات نفسها، مش بيانات شخصية.
  */
-export function readMetaCookies(): { fbp?: string; fbc?: string } {
+export function readAdCookies(): { fbp?: string; fbc?: string; ttp?: string; ttclid?: string } {
   try {
     const read = (name: string) =>
       document.cookie
@@ -264,7 +274,16 @@ export function readMetaCookies(): { fbp?: string; fbc?: string } {
       if (fbclid) fbc = `fb.1.${Date.now()}.${fbclid}`;
     }
 
-    return { ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}) };
+    // تيك توك: كوكي _ttp ومعرّف النقرة ttclid من الرابط.
+    const ttp = read("_ttp");
+    const ttclid = new URLSearchParams(window.location.search).get("ttclid") ?? read("ttclid");
+
+    return {
+      ...(fbp ? { fbp } : {}),
+      ...(fbc ? { fbc } : {}),
+      ...(ttp ? { ttp } : {}),
+      ...(ttclid ? { ttclid } : {}),
+    };
   } catch {
     return {};
   }

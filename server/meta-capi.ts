@@ -117,7 +117,7 @@ export async function sendPurchaseEvent(event: PurchaseEvent): Promise<void> {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(10000),
       },
     );
 

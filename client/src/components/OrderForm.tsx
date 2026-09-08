@@ -32,7 +32,7 @@ import {
   type Pricing,
 } from "@/lib/api";
 import { PRODUCT_ID, PRODUCT_NAME, productImages } from "@/lib/content";
-import { readMetaCookies, trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
+import { readAdCookies, trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
 
 type Errors = Partial<Record<"name" | "phone1" | "phone2" | "address" | "governorateId", string>>;
 
@@ -164,7 +164,7 @@ export default function OrderForm({
         cityId: cityId || undefined,
         qty,
         note: note.trim() || undefined,
-        ...readMetaCookies(),
+        ...readAdCookies(),
       });
       setResult(response);
 

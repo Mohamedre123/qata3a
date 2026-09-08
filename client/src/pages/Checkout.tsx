@@ -3,15 +3,31 @@
  * (إعلانات، واتساب، رسائل) اللي عايزة توصل العميل لخطوة الطلب فورًا.
  */
 import { ChevronRight, ShieldCheck, Truck, Undo2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Link } from "wouter";
 import OrderForm from "@/components/OrderForm";
 import Reveal from "@/components/Reveal";
 import { Footer, TopBar } from "@/components/SiteChrome";
 import { egp, useStorefront } from "@/lib/api";
-import { BRAND, PRODUCT_NAME, productImages } from "@/lib/content";
+import { trackAddToCart, trackViewContent } from "@/lib/analytics";
+import { BRAND, PRODUCT_ID, PRODUCT_NAME, productImages } from "@/lib/content";
 
 export default function Checkout() {
-  const { pricing } = useStorefront();
+  const { data: storefront, pricing } = useStorefront();
+  const tracked = useRef(false);
+
+  /**
+   * الزائر اللي بيجي على /checkout مباشرة (من إعلان مثلًا) مبيعدّيش على أزرار
+   * الصفحة الرئيسية، فبنسجّل له ViewContent و AddToCart هنا عشان القمع يفضل
+   * كامل في المنصتين.
+   */
+  useEffect(() => {
+    if (tracked.current || !storefront) return;
+    tracked.current = true;
+    const item = { value: pricing.sell, qty: 1, contentId: PRODUCT_ID, contentName: PRODUCT_NAME };
+    trackViewContent(item);
+    trackAddToCart(item);
+  }, [storefront, pricing.sell]);
 
   return (
     <main dir="rtl" className="min-h-screen bg-ivory text-[#101733]">

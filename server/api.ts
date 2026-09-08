@@ -19,8 +19,10 @@ import {
   readStoredKey,
   writeStoredKey,
 } from "./config.js";
+import { runInBackground } from "./background.js";
 import { FALLBACK_GOVERNORATES } from "./fallback-shipping.js";
 import { HAS_META_CAPI, newEventId, sendPurchaseEvent } from "./meta-capi.js";
+import { HAS_TIKTOK_EVENTS, sendTikTokPurchase } from "./tiktok-events.js";
 import {
   HAS_KV,
   STATUS_MAP,
@@ -44,14 +46,15 @@ import {
 // ---------------------------------------------------------------------------
 
 /** لازم يطابق PRODUCT_ID في client/src/lib/content.ts. */
-const PIXEL_CONTENT_ID = process.env.PIXEL_CONTENT_ID || "qataaty-stainless-board";
+const PIXEL_CONTENT_ID =
+  process.env.PIXEL_CONTENT_ID || "qataaty-stainless-board";
 const PIXEL_CONTENT_NAME = "لوح تقطيع ستانلس ستيل";
 
 const ARABIC_DIGITS = /[٠-٩۰-۹]/g;
 
 /** يحوّل الأرقام العربية/الفارسية إلى لاتينية حتى يقبلها الـ API. */
 function normalizeDigits(input: string) {
-  return input.replace(ARABIC_DIGITS, (d) => {
+  return input.replace(ARABIC_DIGITS, d => {
     const code = d.charCodeAt(0);
     const base = code >= 0x06f0 ? 0x06f0 : 0x0660;
     return String(code - base);
@@ -77,7 +80,10 @@ function appendLine(file: string, payload: unknown) {
   try {
     fs.appendFileSync(file, `${JSON.stringify(payload)}\n`, "utf-8");
   } catch (error) {
-    console.error(`[qataaty] failed writing ${file}:`, (error as Error).message);
+    console.error(
+      `[qataaty] failed writing ${file}:`,
+      (error as Error).message
+    );
   }
 }
 
@@ -115,7 +121,7 @@ function readLines<T>(file: string, limit = 200): T[] {
       .filter(Boolean)
       .slice(-limit)
       .reverse()
-      .map((line) => JSON.parse(line) as T);
+      .map(line => JSON.parse(line) as T);
   } catch {
     return [];
   }
@@ -135,7 +141,9 @@ function rateLimited(key: string, max: number, windowMs: number) {
 }
 
 function clientIp(req: Request) {
-  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const forwarded = String(req.headers["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim();
   return forwarded || req.socket?.remoteAddress || "unknown";
 }
 
@@ -150,10 +158,10 @@ function clientIp(req: Request) {
 function pickProperty(product: SafkaProduct): SafkaProperty | null {
   const list = Array.isArray(product.properties) ? product.properties : [];
   if (config.propertyId) {
-    const exact = list.find((item) => item._id === config.propertyId);
+    const exact = list.find(item => item._id === config.propertyId);
     if (exact) return exact;
   }
-  return list.find((item) => item.is_available !== false) ?? list[0] ?? null;
+  return list.find(item => item.is_available !== false) ?? list[0] ?? null;
 }
 
 /** سعر المنتج عند صفقة (تكلفتك) — أساس حساب العمولة. */
@@ -168,8 +176,15 @@ function basePrice(product: SafkaProduct, property: SafkaProperty | null) {
  * العمولة = (سعر بيعك للعميل − سعر المنتج عند صفقة) × الكمية.
  * مثال من توثيق صفقة: منتج بـ 180 و«سعر البيع المقترح 280 عمولتك 100».
  */
-function commissionFor(product: SafkaProduct, property: SafkaProperty | null, qty: number) {
-  if (config.fixedCommission !== null && Number.isFinite(config.fixedCommission)) {
+function commissionFor(
+  product: SafkaProduct,
+  property: SafkaProperty | null,
+  qty: number
+) {
+  if (
+    config.fixedCommission !== null &&
+    Number.isFinite(config.fixedCommission)
+  ) {
     return Math.max(0, Math.round(config.fixedCommission * qty));
   }
   const base = basePrice(product, property);
@@ -187,10 +202,14 @@ export function createApiRouter(): Router {
 
   const requireAdmin = (req: Request, res: Response, next: () => void) => {
     if (!config.adminToken) {
-      res.status(503).json({ success: false, error: "اضبط ADMIN_TOKEN في ملف .env أولًا." });
+      res
+        .status(503)
+        .json({ success: false, error: "اضبط ADMIN_TOKEN في ملف .env أولًا." });
       return;
     }
-    const provided = String(req.query.token || req.headers["x-admin-token"] || "");
+    const provided = String(
+      req.query.token || req.headers["x-admin-token"] || ""
+    );
     if (provided !== config.adminToken) {
       res.status(401).json({ success: false, error: "توكن الإدارة غير صحيح." });
       return;
@@ -202,7 +221,11 @@ export function createApiRouter(): Router {
   // صحة الخدمة
   // -------------------------------------------------------------------------
   router.get("/health", (_req, res) => {
-    res.json({ ok: true, connected: Boolean(getApiKey()), time: new Date().toISOString() });
+    res.json({
+      ok: true,
+      connected: Boolean(getApiKey()),
+      time: new Date().toISOString(),
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -240,11 +263,15 @@ export function createApiRouter(): Router {
           name: product.name,
           barcode: product.barcode ?? null,
           description: product.description ?? "",
-          images: (product.images?.length ? product.images : [product.image]).filter(Boolean),
-          faqs: (product.faqs ?? []).filter((faq) => faq.is_active !== false),
+          images: (product.images?.length
+            ? product.images
+            : [product.image]
+          ).filter(Boolean),
+          faqs: (product.faqs ?? []).filter(faq => faq.is_active !== false),
           propertyId: property?._id ?? null,
           propertyName: property?.key ?? null,
-          inStock: product.is_active !== false && property?.is_available !== false,
+          inStock:
+            product.is_active !== false && property?.is_available !== false,
         },
       });
     } catch (error) {
@@ -268,7 +295,10 @@ export function createApiRouter(): Router {
       res.json({
         source: "fallback",
         connected: false,
-        governorates: FALLBACK_GOVERNORATES.map((row) => ({ ...row, cities: [] })),
+        governorates: FALLBACK_GOVERNORATES.map(row => ({
+          ...row,
+          cities: [],
+        })),
       });
       return;
     }
@@ -276,12 +306,15 @@ export function createApiRouter(): Router {
     try {
       const list = await fetchPriceList();
       const governorates = list
-        .map((row) => ({
+        .map(row => ({
           id: row._id,
-          nameAr: row.governorateNameAr || row.governorateName || `محافظة ${row.governorate}`,
+          nameAr:
+            row.governorateNameAr ||
+            row.governorateName ||
+            `محافظة ${row.governorate}`,
           nameEn: row.governorateName || "",
           price: Number(row.price) || 0,
-          cities: (row.cities ?? []).map((city) => ({
+          cities: (row.cities ?? []).map(city => ({
             id: String(city.id),
             nameAr: city.city_name_ar,
             nameEn: city.city_name_en || "",
@@ -297,7 +330,10 @@ export function createApiRouter(): Router {
         source: "fallback",
         connected: true,
         error: safka.message,
-        governorates: FALLBACK_GOVERNORATES.map((row) => ({ ...row, cities: [] })),
+        governorates: FALLBACK_GOVERNORATES.map(row => ({
+          ...row,
+          cities: [],
+        })),
       });
     }
   });
@@ -307,7 +343,12 @@ export function createApiRouter(): Router {
   // -------------------------------------------------------------------------
   router.post("/orders", async (req, res) => {
     if (rateLimited(`order:${clientIp(req)}`, 8, 10 * 60 * 1000)) {
-      res.status(429).json({ success: false, error: "محاولات كثيرة. برجاء المحاولة بعد قليل." });
+      res
+        .status(429)
+        .json({
+          success: false,
+          error: "محاولات كثيرة. برجاء المحاولة بعد قليل.",
+        });
       return;
     }
 
@@ -321,13 +362,18 @@ export function createApiRouter(): Router {
     const note = text(body.note, 300);
     const qty = Math.min(
       config.maxQty,
-      Math.max(1, Math.floor(Number(normalizeDigits(String(body.qty ?? 1)))) || 1),
+      Math.max(
+        1,
+        Math.floor(Number(normalizeDigits(String(body.qty ?? 1)))) || 1
+      )
     );
 
     const errors: string[] = [];
     if (name.length < 3) errors.push("اكتب الاسم بالكامل.");
-    if (!isValidEgyptPhone(phone1)) errors.push("رقم الموبايل غير صحيح (مثال: 01012345678).");
-    if (phone2 && !isValidEgyptPhone(phone2)) errors.push("الرقم الاحتياطي غير صحيح.");
+    if (!isValidEgyptPhone(phone1))
+      errors.push("رقم الموبايل غير صحيح (مثال: 01012345678).");
+    if (phone2 && !isValidEgyptPhone(phone2))
+      errors.push("الرقم الاحتياطي غير صحيح.");
     if (address.length < 8) errors.push("اكتب العنوان بالتفصيل.");
     if (!governorateId) errors.push("اختر المحافظة.");
 
@@ -345,19 +391,27 @@ export function createApiRouter(): Router {
     if (getApiKey() && !governorateId.startsWith("fallback-")) {
       try {
         const list = await fetchPriceList();
-        const match = list.find((row) => row._id === governorateId);
+        const match = list.find(row => row._id === governorateId);
         if (!match) {
-          res.status(400).json({ success: false, error: "المحافظة المختارة غير متاحة للشحن." });
+          res
+            .status(400)
+            .json({
+              success: false,
+              error: "المحافظة المختارة غير متاحة للشحن.",
+            });
           return;
         }
         shipping = Number(match.price) || 0;
-        governorateName = match.governorateNameAr || match.governorateName || "";
-        cityName = match.cities?.find((city) => String(city.id) === cityId)?.city_name_ar || "";
+        governorateName =
+          match.governorateNameAr || match.governorateName || "";
+        cityName =
+          match.cities?.find(city => String(city.id) === cityId)
+            ?.city_name_ar || "";
       } catch (error) {
         console.error("[qataaty] shipping lookup:", (error as Error).message);
       }
     } else {
-      const match = FALLBACK_GOVERNORATES.find((row) => row.id === governorateId);
+      const match = FALLBACK_GOVERNORATES.find(row => row.id === governorateId);
       shipping = match?.price ?? 0;
       governorateName = match?.nameAr ?? "";
       realGovernorateId = "";
@@ -375,8 +429,8 @@ export function createApiRouter(): Router {
      * الطلب لصفقة أو اتسجّل محليًا. بنبعتها من السيرفر كمان عشان الأحداث اللي
      * بيمنعها المتصفح ما تضيعش.
      */
-    const reportPurchase = (orderRef: string) =>
-      void sendPurchaseEvent({
+    const reportPurchase = (orderRef: string) => {
+      const shared = {
         eventId: purchaseEventId,
         eventTime: Math.floor(Date.now() / 1000),
         value: total,
@@ -384,13 +438,45 @@ export function createApiRouter(): Router {
         contentId: PIXEL_CONTENT_ID,
         contentName: PIXEL_CONTENT_NAME,
         orderRef,
-        customer: { name, phone: phone1, city: cityName, governorate: governorateName },
         clientIp: clientIp(req),
         userAgent: text(req.headers["user-agent"], 200),
         sourceUrl: text(req.headers.referer, 300) || undefined,
-        fbp: text(body.fbp, 120) || undefined,
-        fbc: text(body.fbc, 200) || undefined,
-      });
+      };
+
+      runInBackground(
+        sendTikTokPurchase({
+          ...shared,
+          customer: { phone: phone1 },
+          ttclid: text(body.ttclid, 200) || undefined,
+          ttp: text(body.ttp, 200) || undefined,
+        }),
+        "tiktok-events"
+      );
+
+      runInBackground(
+        sendPurchaseEvent({
+          eventId: purchaseEventId,
+          eventTime: Math.floor(Date.now() / 1000),
+          value: total,
+          quantity: qty,
+          contentId: PIXEL_CONTENT_ID,
+          contentName: PIXEL_CONTENT_NAME,
+          orderRef,
+          customer: {
+            name,
+            phone: phone1,
+            city: cityName,
+            governorate: governorateName,
+          },
+          clientIp: clientIp(req),
+          userAgent: text(req.headers["user-agent"], 200),
+          sourceUrl: text(req.headers.referer, 300) || undefined,
+          fbp: text(body.fbp, 120) || undefined,
+          fbc: text(body.fbc, 200) || undefined,
+        }),
+        "meta-capi"
+      );
+    };
 
     const record = {
       ref: `QT-${Date.now().toString(36).toUpperCase()}`,
@@ -413,8 +499,10 @@ export function createApiRouter(): Router {
     if (!getApiKey() || !realGovernorateId) {
       record.error = "الموقع غير مربوط بحساب صفقة — تم حفظ الطلب محليًا.";
       appendLine(ORDERS_LOG_FILE, record);
-      void backupOrder(record);
-      console.warn(`[qataaty] order saved locally (not connected): ${record.ref}`);
+      runInBackground(backupOrder(record), "orders-backup");
+      console.warn(
+        `[qataaty] order saved locally (not connected): ${record.ref}`
+      );
       reportPurchase(record.ref);
       void saveOrderStatus({
         reference: record.ref,
@@ -430,7 +518,13 @@ export function createApiRouter(): Router {
         pendingSync: true,
         reference: record.ref,
         eventId: purchaseEventId,
-        summary: { qty, unitPrice: config.sellPrice, subtotal, shipping, total },
+        summary: {
+          qty,
+          unitPrice: config.sellPrice,
+          subtotal,
+          shipping,
+          total,
+        },
       });
       return;
     }
@@ -439,19 +533,26 @@ export function createApiRouter(): Router {
       const product = await fetchProduct();
       const property = pickProperty(product);
       if (!property?._id) {
-        throw new SafkaError("المنتج لا يحتوي على خاصية (property) صالحة للطلب.", 409);
+        throw new SafkaError(
+          "المنتج لا يحتوي على خاصية (property) صالحة للطلب.",
+          409
+        );
       }
 
       const payload = {
         client_name: name,
         client_phone1: phone1,
         client_phone2: phone2 || "",
-        client_address: [address, cityName, governorateName].filter(Boolean).join(" - "),
+        client_address: [address, cityName, governorateName]
+          .filter(Boolean)
+          .join(" - "),
         shipping_governorate: realGovernorateId,
         ...(cityId ? { city: cityId } : {}),
         commission: commissionFor(product, property, qty),
         total: String(total),
-        items: [{ qty: String(qty), product: product._id, property: property._id }],
+        items: [
+          { qty: String(qty), product: product._id, property: property._id },
+        ],
         note: note || "",
         page_name: config.pageName,
         ...(config.pageId ? { page_id: config.pageId } : { page_id: null }),
@@ -461,7 +562,7 @@ export function createApiRouter(): Router {
       record.synced = true;
       record.safka = result?.data ?? result;
       appendLine(ORDERS_LOG_FILE, record);
-      void backupOrder(record);
+      runInBackground(backupOrder(record), "orders-backup");
 
       const serial = result?.data?.serial_number || record.ref;
       console.log(`[qataaty] order sent to safka: ${serial}`);
@@ -488,13 +589,19 @@ export function createApiRouter(): Router {
         eventId: purchaseEventId,
         orderId: result?.data?._id ?? null,
         status: result?.data?.status ?? "pending",
-        summary: { qty, unitPrice: config.sellPrice, subtotal, shipping, total },
+        summary: {
+          qty,
+          unitPrice: config.sellPrice,
+          subtotal,
+          shipping,
+          total,
+        },
       });
     } catch (error) {
       const safka = error as SafkaError;
       record.error = safka.message;
       appendLine(ORDERS_LOG_FILE, record);
-      void backupOrder(record);
+      runInBackground(backupOrder(record), "orders-backup");
       console.error(`[qataaty] order FAILED (${record.ref}):`, safka.message);
       reportPurchase(record.ref);
       void saveOrderStatus({
@@ -513,7 +620,13 @@ export function createApiRouter(): Router {
         pendingSync: true,
         reference: record.ref,
         eventId: purchaseEventId,
-        summary: { qty, unitPrice: config.sellPrice, subtotal, shipping, total },
+        summary: {
+          qty,
+          unitPrice: config.sellPrice,
+          subtotal,
+          shipping,
+          total,
+        },
       });
     }
   });
@@ -530,7 +643,9 @@ export function createApiRouter(): Router {
     }
 
     if (rateLimited(`track:${clientIp(req)}`, 40, 10 * 60 * 1000)) {
-      res.status(429).json({ found: false, error: "محاولات كثيرة. جرّب بعد شوية." });
+      res
+        .status(429)
+        .json({ found: false, error: "محاولات كثيرة. جرّب بعد شوية." });
       return;
     }
 
@@ -547,7 +662,10 @@ export function createApiRouter(): Router {
     const info = describeStatus(order.status);
     // صياغتنا أوضح للعميل من تسمية صفقة الداخلية («معلق» مثلًا)،
     // فبنستخدم statusAr بتاعهم فقط لو الحالة مش معروفة عندنا.
-    const known = Object.prototype.hasOwnProperty.call(STATUS_MAP, order.status);
+    const known = Object.prototype.hasOwnProperty.call(
+      STATUS_MAP,
+      order.status
+    );
 
     res.json({
       found: true,
@@ -569,7 +687,8 @@ export function createApiRouter(): Router {
   // -------------------------------------------------------------------------
   router.get("/safka/connect", (req, res) => {
     const origin =
-      config.publicUrl || `${req.protocol}://${req.get("host") ?? "localhost:3000"}`;
+      config.publicUrl ||
+      `${req.protocol}://${req.get("host") ?? "localhost:3000"}`;
 
     const url = new URL(config.connectBase);
     url.searchParams.set("name", config.pageName);
@@ -591,7 +710,9 @@ export function createApiRouter(): Router {
     const key = String(body.api_safka_key ?? "").trim();
 
     if (!key) {
-      res.status(400).json({ success: false, error: "api_safka_key is required" });
+      res
+        .status(400)
+        .json({ success: false, error: "api_safka_key is required" });
       return;
     }
 
@@ -609,7 +730,9 @@ export function createApiRouter(): Router {
     // واحدة في السجلّات عشان صاحب الموقع ينسخه لمتغيّرات البيئة.
     console.log("[qataaty] ✅ received api-safka-key from Safka callback");
     if (!persisted || IS_SERVERLESS) {
-      console.log(`[qataaty] ⚠️  set this in your env vars → SAFKA_API_KEY=${key}`);
+      console.log(
+        `[qataaty] ⚠️  set this in your env vars → SAFKA_API_KEY=${key}`
+      );
     }
 
     res.json({ success: true });
@@ -617,17 +740,29 @@ export function createApiRouter(): Router {
 
   /** صفقة تُرسل تحديثات حالة الطلب هنا. */
   router.post("/hooks/order", (req, res) => {
-    appendLine(EVENTS_LOG_FILE, { received_at: new Date().toISOString(), type: "order", payload: req.body });
+    appendLine(EVENTS_LOG_FILE, {
+      received_at: new Date().toISOString(),
+      type: "order",
+      payload: req.body,
+    });
 
-    const order = (req.body as {
-      order?: { serial_number?: string; status?: string; status_ar?: string };
-    })?.order;
+    const order = (
+      req.body as {
+        order?: { serial_number?: string; status?: string; status_ar?: string };
+      }
+    )?.order;
 
-    console.log(`[qataaty] order webhook: ${order?.serial_number ?? "?"} → ${order?.status_ar ?? "?"}`);
+    console.log(
+      `[qataaty] order webhook: ${order?.serial_number ?? "?"} → ${order?.status_ar ?? "?"}`
+    );
 
     // ده المصدر الوحيد لحالة الطلب — صفقة مالهاش نقطة API لجلبها.
     if (order?.serial_number && order.status) {
-      void updateOrderStatus(order.serial_number, order.status, order.status_ar);
+      void updateOrderStatus(
+        order.serial_number,
+        order.status,
+        order.status_ar
+      );
     }
 
     res.json({ success: true });
@@ -635,7 +770,11 @@ export function createApiRouter(): Router {
 
   /** صفقة تُرسل بيانات المنتج هنا عند دفعه لنا. */
   router.post("/hooks/product", (req, res) => {
-    appendLine(EVENTS_LOG_FILE, { received_at: new Date().toISOString(), type: "product", payload: req.body });
+    appendLine(EVENTS_LOG_FILE, {
+      received_at: new Date().toISOString(),
+      type: "product",
+      payload: req.body,
+    });
     clearSafkaCache();
     res.json({ success: true });
   });
@@ -651,7 +790,10 @@ export function createApiRouter(): Router {
       keySource: process.env.SAFKA_API_KEY ? "env" : stored ? "callback" : null,
       keyPreview: key ? `${key.slice(0, 6)}…${key.slice(-4)}` : null,
       keyName: stored?.name ?? null,
-      hooks: { product: stored?.productHook ?? null, order: stored?.orderHook ?? null },
+      hooks: {
+        product: stored?.productHook ?? null,
+        order: stored?.orderHook ?? null,
+      },
       productId: config.productId,
       sellPrice: config.sellPrice,
       compareAtPrice: config.compareAtPrice,
@@ -659,6 +801,7 @@ export function createApiRouter(): Router {
       ordersWebhook: Boolean(config.ordersWebhookUrl),
       trackingStore: HAS_KV,
       metaCapi: HAS_META_CAPI,
+      tiktokEvents: HAS_TIKTOK_EVENTS,
     };
 
     if (!key) {
@@ -667,7 +810,10 @@ export function createApiRouter(): Router {
     }
 
     try {
-      const [product, list] = await Promise.all([fetchProduct(), fetchPriceList()]);
+      const [product, list] = await Promise.all([
+        fetchProduct(),
+        fetchPriceList(),
+      ]);
       const property = pickProperty(product);
       res.json({
         ...base,
@@ -683,7 +829,12 @@ export function createApiRouter(): Router {
         governorates: list.length,
       });
     } catch (error) {
-      res.json({ ...base, product: null, governorates: 0, error: (error as Error).message });
+      res.json({
+        ...base,
+        product: null,
+        governorates: 0,
+        error: (error as Error).message,
+      });
     }
   });
 
@@ -702,7 +853,12 @@ export function createApiRouter(): Router {
 
   // -------------------------------------------------------------------------
   router.use((req, res) => {
-    res.status(404).json({ success: false, error: `لا توجد نقطة API بهذا المسار: ${req.path}` });
+    res
+      .status(404)
+      .json({
+        success: false,
+        error: `لا توجد نقطة API بهذا المسار: ${req.path}`,
+      });
   });
 
   return router;

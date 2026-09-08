@@ -1,26 +1,35 @@
 # قطاعتي — الخطوات المتبقية عليك
 
-## 1) متغيّر سرّي لازم تضيفه في Vercel
-Settings → Environment Variables → All Environments:
+## 1) متغيّرات سرّية في Vercel  ← الأهم
+Settings → Environment Variables → النوع **Secret** → All Environments:
 
-    META_ACCESS_TOKEN = <التوكن بتاع Meta Conversions API>
+    META_ACCESS_TOKEN    = <توكن Meta Conversions API>
+    TIKTOK_ACCESS_TOKEN  = <توكن TikTok Events API>
 
-بعدها Redeploy. من غيره حدث الشراء هيتبعت من المتصفح بس (وهتخسر جزء منه).
-🔴 التوكن ده سرّي — لو اتشارك في أي مكان غيّره من Events Manager.
+بعدها **Redeploy**.
 
-## 2) تخزين دائم لتتبّع الطلب
+⚠️ متضيفش VITE_TIKTOK_PURCHASE_EVENT — الافتراضي في الكود بقى CompletePayment.
+   ولو احتجت تضيف أي متغيّر بادئته VITE_ اختار **Config** مش **Secret**
+   (دي كانت المشكلة في الاسكرين — VITE_ بيتحط في كود المتصفح فمش سر).
+
+🔴 التوكنات دي كتبتها في الشات — الأأمن تغيّرها من Events Manager وتحط الجديد.
+
+## 2) ترتيب أحداث iOS (ميتا)
+- [ ] Events Manager → Aggregated Event Measurement
+- [ ] خلي Purchase أول حدث في الأولوية
+
+## 3) تخزين دائم لتتبّع الطلب
 - [ ] Vercel → Storage → Marketplace → Upstash (Redis) → Create → اربطه بالمشروع
 - [ ] Redeploy
 > من غيره صفحة /track بتشتغل بس الحالات بتضيع مع كل نشر.
 
-## 3) اختبار البيكسل (اختياري ومؤقت)
-- [ ] Events Manager → Test Events → خد الكود
-- [ ] ضيف META_TEST_EVENT_CODE في Vercel → اعمل طلب تجريبي → اتأكد إن Purchase
-      واصل من Browser و Server ومندمج
-- [ ] **امسح المتغيّر ده بعد الاختبار**
-
-## 4) لو حملة تيك توك متضبّطة على Complete Payment
-- [ ] ضيف VITE_TIKTOK_PURCHASE_EVENT=CompletePayment في Vercel ثم Redeploy
+## 4) اختبار الأحداث (مؤقت)
+- [ ] خد كود الاختبار من كل منصة وحطه في META_TEST_EVENT_CODE و TIKTOK_TEST_EVENT_CODE
+- [ ] اعمل طلب تجريبي
+- [ ] في Vercel → Logs لازم تشوف:
+        [qataaty] Meta CAPI purchase sent (...), received=1
+        [qataaty] TikTok CompletePayment sent (...)
+- [ ] **امسح متغيّرات الاختبار بعد كده**
 
 ## 5) سجل الطلبات في Google Sheet (مؤجّل)
 الكود جاهز في docs/google-sheet-webhook.gs لما تحتاجه.
