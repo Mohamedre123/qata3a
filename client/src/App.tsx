@@ -4,7 +4,7 @@
  */
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import WhatsAppButton from "./components/WhatsAppButton";
@@ -19,8 +19,17 @@ import NotFound from "./pages/NotFound";
 function Router() {
   const [location] = useLocation();
 
-  // تسجيل زيارة الصفحة مع كل تغيير مسار (الموقع SPA فالتحميل بيحصل مرة واحدة).
+  /**
+   * زيارة الصفحة الأولى بيسجّلها تحميل البيكسل نفسه (initAnalytics)، فلو
+   * سجّلناها هنا كمان هتتبعت مرتين وميتا بتعتبرها أحداث مكرّرة. عشان كده
+   * بنتخطّى أول تشغيل ونسجّل تغييرات المسار بعد كده بس.
+   */
+  const firstRender = useRef(true);
   useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     trackPageView();
   }, [location]);
 
