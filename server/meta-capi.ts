@@ -75,6 +75,9 @@ export async function sendPurchaseEvent(event: PurchaseEvent): Promise<void> {
 
   const userData: Record<string, unknown> = {
     ...(phone ? { ph: [hash(phone)] } : {}),
+    // معرّف ثابت للعميل من رقمه — المتصفح بيبعت نفس القيمة خام والبيكسل
+    // بيهشّرها، فالاتنين بيطلعوا نفس الهاش وميتا بتطابقهم.
+    ...(phone ? { external_id: [hash(phone)] } : {}),
     ...(nameParts[0] ? { fn: [hash(nameParts[0])] } : {}),
     ...(nameParts.length > 1 ? { ln: [hash(nameParts[nameParts.length - 1])] } : {}),
     ...(customer.city ? { ct: [hash(customer.city.replace(/\s/g, ""))] } : {}),
@@ -110,9 +113,14 @@ export async function sendPurchaseEvent(event: PurchaseEvent): Promise<void> {
     ...(TEST_EVENT_CODE ? { test_event_code: TEST_EVENT_CODE } : {}),
   };
 
+  /** قابل للتوجيه لسيرفر وهمي أثناء الاختبار. */
+  const url =
+    process.env.META_API_URL ||
+    `https://graph.facebook.com/${API_VERSION}/${PIXEL_ID}/events?access_token=${encodeURIComponent(ACCESS_TOKEN)}`;
+
   try {
     const response = await fetch(
-      `https://graph.facebook.com/${API_VERSION}/${PIXEL_ID}/events?access_token=${encodeURIComponent(ACCESS_TOKEN)}`,
+      url,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

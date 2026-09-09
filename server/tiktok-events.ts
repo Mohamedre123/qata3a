@@ -76,6 +76,8 @@ export async function sendTikTokPurchase(event: TikTokPurchase): Promise<void> {
         event_id: event.eventId,
         user: {
           ...(phone ? { phone: hash(phone) } : {}),
+          // معرّف ثابت للعميل — بيرفع جودة المطابقة زي ما بيعمل عند ميتا.
+          ...(phone ? { external_id: hash(phone) } : {}),
           ...(event.ttclid ? { ttclid: event.ttclid } : {}),
           ...(event.ttp ? { ttp: event.ttp } : {}),
           ...(event.clientIp && event.clientIp !== "unknown" ? { ip: event.clientIp } : {}),

@@ -32,7 +32,12 @@ import {
   type Pricing,
 } from "@/lib/api";
 import { PRODUCT_ID, PRODUCT_NAME, productImages } from "@/lib/content";
-import { readAdCookies, trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
+import {
+  readAdCookies,
+  setCustomerMatchData,
+  trackInitiateCheckout,
+  trackPurchase,
+} from "@/lib/analytics";
 
 type Errors = Partial<Record<"name" | "phone1" | "phone2" | "address" | "governorateId", string>>;
 
@@ -118,6 +123,10 @@ export default function OrderForm({
     [governorates, governorateId],
   );
   const cities = selectedGov?.cities ?? [];
+  const selectedCity = useMemo(
+    () => cities.find((row) => row.id === cityId) ?? null,
+    [cities, cityId],
+  );
 
   // إعادة ضبط المدينة عند تغيير المحافظة.
   useEffect(() => setCityId(""), [governorateId]);
@@ -168,8 +177,16 @@ export default function OrderForm({
       });
       setResult(response);
 
+      // بيانات المطابقة الأول، عشان حدث الشراء نفسه يخرج بأعلى جودة مطابقة.
+      setCustomerMatchData({
+        name: name.trim(),
+        phone: phone1,
+        city: selectedCity?.nameEn || selectedCity?.nameAr,
+        governorate: selectedGov?.nameEn || selectedGov?.nameAr,
+      });
+
       // أهم حدث في القمع. eventId جاي من السيرفر، ونفسه اتبعت لـ Meta CAPI
-      // فميتا بتحسب الحدثين واحد.
+      // و TikTok Events API فكل منصة بتحسب الحدثين واحد.
       trackPurchase({
         value: response.summary.total,
         qty: response.summary.qty,

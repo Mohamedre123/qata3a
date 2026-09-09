@@ -129,6 +129,59 @@ function loadTikTokPixel() {
 }
 
 // ---------------------------------------------------------------------------
+// المطابقة المتقدمة (Advanced Matching)
+// ---------------------------------------------------------------------------
+
+/**
+ * تحويل الرقم المصري لصيغة دولية بدون + : 01012345678 → 201012345678
+ * لازم تطابق التطبيع اللي على السيرفر بالظبط، وإلا الهاش هيختلف والمطابقة تفشل.
+ */
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("20")) return digits;
+  if (digits.startsWith("0")) return `20${digits.slice(1)}`;
+  return `20${digits}`;
+}
+
+/**
+ * المطابقة المتقدمة اليدوية: بنعيد تهيئة البيكسل ببيانات العميل قبل حدث
+ * الشراء مباشرة. البيكسل نفسه هو اللي بيهشّرها في المتصفح — إحنا بنبعتها
+ * خام وهو بيعمل SHA-256 قبل ما يرسلها، فمفيش بيانات نيّة بتخرج من الجهاز.
+ *
+ * ده أهم عامل في «جودة مطابقة الحدث» عند ميتا، ومن غيره بتشتكي إن بيانات
+ * الأحداث ناقصة.
+ */
+export function setCustomerMatchData(customer: {
+  name?: string;
+  phone?: string;
+  city?: string;
+  governorate?: string;
+}) {
+  if (!META_PIXEL_ID) return;
+
+  try {
+    const phone = customer.phone ? normalizePhone(customer.phone) : "";
+    const parts = (customer.name ?? "").trim().split(/\s+/).filter(Boolean);
+
+    const matchData: Record<string, string> = { country: "eg" };
+    if (phone) {
+      matchData.ph = phone;
+      // معرّف ثابت للعميل — نفس القيمة اللي السيرفر بيهشّرها، فبيتطابقوا.
+      matchData.external_id = phone;
+    }
+    if (parts[0]) matchData.fn = parts[0];
+    if (parts.length > 1) matchData.ln = parts[parts.length - 1];
+    if (customer.city) matchData.ct = customer.city.replace(/\s/g, "").toLowerCase();
+    if (customer.governorate) matchData.st = customer.governorate.replace(/\s/g, "").toLowerCase();
+
+    // إعادة init بنفس معرّف البيكسل بتحدّث بيانات المطابقة للأحداث الجاية.
+    window.fbq?.("init", META_PIXEL_ID, matchData);
+  } catch {
+    /* لو حصل أي خطأ نكمل عادي — الحدث نفسه أهم من المطابقة */
+  }
+}
+
+// ---------------------------------------------------------------------------
 // الأحداث
 // ---------------------------------------------------------------------------
 
