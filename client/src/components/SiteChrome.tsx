@@ -2,7 +2,7 @@
  * العناصر المشتركة بين الصفحات: شريط العرض، الترويسة اللاصقة، والتذييل.
  */
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Flame, ShoppingBag, Sparkles, Truck } from "lucide-react";
+import { ArrowLeft, Flame, MessageCircle, ShoppingBag, Sparkles, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { BRAND } from "@/lib/content";
@@ -143,6 +143,27 @@ export function Footer() {
             <li>التوصيل من ٢ إلى ٥ أيام عمل</li>
             <li>استبدال خلال ٧ أيام من الاستلام</li>
           </ul>
+
+          {BRAND.whatsapp && (
+            <>
+              <h3 className="mt-7 font-display text-sm font-extrabold tracking-wide text-white/90">
+                للتواصل
+              </h3>
+              <a
+                href={`https://wa.me/${BRAND.whatsapp}?text=${encodeURIComponent(BRAND.whatsappMessage)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 transition-colors hover:border-white/30 hover:bg-white/10"
+              >
+                <MessageCircle className="h-4 w-4 shrink-0 text-[#25D366]" />
+                {/* dir=ltr عشان الرقم ما يتقلبش في صفحة عربية */}
+                <span dir="ltr" className="text-sm font-bold text-white/85">
+                  {BRAND.whatsappDisplay}
+                </span>
+              </a>
+              <p className="mt-2 text-xs text-white/45">واتساب — من ١٠ ص لـ ٨ م</p>
+            </>
+          )}
         </div>
       </div>
 
