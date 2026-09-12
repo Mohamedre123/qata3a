@@ -152,15 +152,38 @@ img { max-width: 100%; display: block; }
     border-bottom-color: rgba(17, 21, 107, .1);
     box-shadow: 0 10px 30px -18px rgba(17, 21, 107, .5);
   }
+  /**
+   * اللوجو شفاف ونسبته طولية (عرضه نص ارتفاعه تقريبًا)، فبنثبّت الارتفاع
+   * ونسيب العرض يتحدّد لوحده — من غير خلفية ولا إطار عشان يقعد جوه الهيدر
+   * مش كأنه لاصق فوقه.
+   */
+  /**
+   * الارتفاع متحدّد على الصورة نفسها مش على الحاوية — النسبة المئوية
+   * (height:100%) مبتتحلّش هنا لأن ارتفاع الأب مش نهائي، فكانت الصورة
+   * بتطلع بمقاسها الأصلي وتخرج بره الهيدر.
+   */
   .brand-mark {
-    display: grid; place-items: center; width: 46px; height: 46px; flex-shrink: 0;
-    border-radius: 14px; background: #fff; padding: 5px;
-    box-shadow: 0 6px 18px -8px rgba(17, 21, 107, .45);
-    ring: 1px solid rgba(17, 21, 107, .08);
+    display: inline-flex; align-items: center; flex-shrink: 0;
     transition: transform .3s var(--ease);
   }
-  .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
+  .brand-mark img { display: block; height: 38px; width: auto; object-fit: contain; }
+  @media (min-width: 640px) { .brand-mark img { height: 44px; } }
   a:hover > .brand-mark { transform: rotate(-4deg) scale(1.04); }
+
+  /**
+   * على الخلفيات الداكنة (التذييل) اللوجو الكحلي مش هيبان، فبيتحط على لوح
+   * أبيض صغير.
+   */
+  .brand-mark-plate {
+    background: #fff; border-radius: 13px; padding: 6px 9px;
+    box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .5);
+  }
+  .brand-mark-plate img { height: 34px; }
+  @media (min-width: 640px) { .brand-mark-plate img { height: 34px; } }
+
+  /** نسخة كبيرة لصفحة 404. */
+  .brand-mark-lg img { height: 78px; }
+  @media (min-width: 640px) { .brand-mark-lg img { height: 78px; } }
 
   .nav-link {
     position: relative; font-family: var(--font-body); font-weight: 700; font-size: .88rem;

@@ -77,8 +77,8 @@ export function Header({ onOrder }: { onOrder: () => void }) {
     <header className="site-header" data-stuck={stuck}>
       <div className="shell flex items-center justify-between gap-4 py-3">
         <Link href="/" onClick={goHome} className="flex items-center gap-2.5" aria-label={`${BRAND.name} — الصفحة الرئيسية`}>
-          <span className="brand-mark ring-1 ring-navy/8">
-            <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={46} height={46} />
+          <span className="brand-mark">
+            <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={26} height={46} />
           </span>
           <span className="leading-none">
             <b className="block font-display text-lg font-black tracking-tight text-navy">{BRAND.name}</b>
@@ -111,8 +111,8 @@ export function Footer() {
       <div className="shell grid gap-8 py-12 md:grid-cols-[1.2fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
-            <span className="brand-mark">
-              <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={46} height={46} />
+            <span className="brand-mark brand-mark-plate">
+              <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={26} height={46} />
             </span>
             <div>
               <b className="block font-display text-xl font-black">{BRAND.name}</b>

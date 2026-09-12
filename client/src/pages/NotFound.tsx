@@ -6,8 +6,8 @@ export default function NotFound() {
   return (
     <main dir="rtl" className="grid min-h-screen place-items-center bg-ivory p-6 text-center">
       <div>
-        <span className="brand-mark mx-auto !h-16 !w-16 !rounded-2xl">
-          <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={64} height={64} />
+        <span className="brand-mark brand-mark-lg mx-auto">
+          <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={45} height={80} />
         </span>
 
         <p className="mt-7 font-display text-[clamp(4rem,16vw,7rem)] font-black leading-none tracking-tight text-navy/12">

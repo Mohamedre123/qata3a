@@ -36,8 +36,8 @@ export default function Checkout() {
       <header className="border-b border-navy/10 bg-white/70 backdrop-blur">
         <div className="shell flex items-center justify-between gap-4 py-3.5">
           <Link href="/" className="flex items-center gap-2.5" aria-label={`${BRAND.name} — الرئيسية`}>
-            <span className="brand-mark ring-1 ring-navy/8">
-              <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={46} height={46} />
+            <span className="brand-mark">
+              <img src={BRAND.logo} alt={`شعار ${BRAND.name}`} width={26} height={46} />
             </span>
             <b className="font-display text-lg font-black text-navy">{BRAND.name}</b>
           </Link>
