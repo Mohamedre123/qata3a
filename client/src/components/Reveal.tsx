@@ -33,9 +33,15 @@ export default function Reveal({
 
   if (reduce) return <div {...(rest as object)}>{children}</div>;
 
+  // على الموبايل العنصر بياخد عرض الشاشة كله، فالانزلاق الجانبي بيبدأه
+  // بره الكادر ويوسّع الصفحة (فراغ جانبي + كروم بيصغّر الصفحة فالشريط
+  // السفلي بيغطس). فبنحوّله لانزلاق من تحت.
+  const narrow = typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
+  const offset = narrow && (direction === "right" || direction === "left") ? offsets.up : offsets[direction];
+
   return (
     <motion.div
-      initial={{ opacity: 0, ...offsets[direction] }}
+      initial={{ opacity: 0, ...offset }}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
       viewport={{ once: true, amount }}
       transition={{ duration, delay, ease: [0.22, 1, 0.36, 1] }}

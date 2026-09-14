@@ -47,13 +47,21 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+/*
+ * أي عنصر يطلع بره عرض الشاشة كان بيخلّي الصفحة تتسحب يمين وشمال على
+ * الموبايل. overflow-x على body لوحده مش كفاية على كروم أندرويد، فبنقصّ
+ * على html. clip مش بيعمل حاوية تمرير، فالهيدر اللاصق بيفضل شغال.
+ */
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+@supports (overflow-x: clip) {
+  html, body { overflow-x: clip; }
+}
 body {
   margin: 0;
+  max-width: 100%;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 button, input, textarea, select { font: inherit; color: inherit; }
